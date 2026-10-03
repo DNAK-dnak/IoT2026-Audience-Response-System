@@ -1,0 +1,24 @@
+->
+	sudo apt update
+	sudo apt install python3-venv -y
+
+#Cậu di chuyển terminal vào thư mục chứa file code (vd: ble_receiver.py)
+#tại đó tạo môi trường ảo cho dự án BLE
+
+	python3 -m venv pico_env 
+
+# vào môi trường 
+
+	source pico_env/bin/activate
+
+# cài đặt bleak trong môi trường
+
+	pip install bleak
+
+#chạy file 
+
+	python3 ble_receiver.py
+
+# thoát khỏi môi trường
+
+	deactivate
