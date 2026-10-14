@@ -16,7 +16,12 @@ class Settings(BaseSettings):
     mqtt_tls: bool = False       # True for HiveMQ Cloud (port 8883)
     mqtt_client_id: str = "ars-backend"
     room: str = "room1"
-    # AI analysis of results (app/analyze.py). Empty key = the feature is off.
+    # AI analysis of results (app/analyze.py). No key at all = the feature is off.
+    # With both keys set, ai_provider picks one ("gemini" or "anthropic"); empty = Gemini first.
+    ai_provider: str = ""
+    gemini_api_key: str = ""
+    gemini_model: str = "gemini-3.6-flash"          # quota used up? try gemini-3.5-flash-lite
+    gemini_base_url: str = "https://generativelanguage.googleapis.com/v1beta"
     anthropic_api_key: str = ""
     analyze_model: str = "claude-sonnet-5"
     anthropic_base_url: str = "https://api.anthropic.com"
