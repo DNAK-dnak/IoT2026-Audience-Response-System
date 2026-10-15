@@ -1,0 +1,368 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Clicker Bluetooth</title>
+<style>
+/* Phone clicker over Bluetooth (Web Bluetooth), hardware team's protocol. */
+:root{
+  --bg:#E4E8E6; --surface:#EDF0EE; --panel:#DCE2DF; --line:#CBD3CF;
+  --fg:#2F3836; --muted:#6F7B77; --accent:#5E8C84; --on-accent:#F2F6F4;
+  --ok:#5F8F67; --bad:#A86F68; --warn:#A38A53;
+  --r:14px; color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#1F2523; --surface:#29302E; --panel:#323A37; --line:#3E4844;
+  --fg:#D3DBD8; --muted:#8B9793; --accent:#80AAA2; --on-accent:#1F2624;
+  --ok:#8DB393; --bad:#C89A93; --warn:#C8B07A; color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  min-height:100dvh;display:flex;flex-direction:column;-webkit-tap-highlight-color:transparent}
+header{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:var(--surface);border-bottom:1px solid var(--line)}
+header b{font-size:18px}
+.mono{font-family:ui-monospace,"JetBrains Mono",monospace}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--bad);margin-right:6px}
+.dot.on{background:var(--ok)}
+main{flex:1;padding:16px;display:flex;flex-direction:column;gap:14px;max-width:520px;width:100%;margin:0 auto}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px}
+.phase{font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.big{font-size:26px;font-weight:700;margin:4px 0}
+.muted{color:var(--muted)}
+input{width:100%;font:inherit;font-size:24px;letter-spacing:.12em;padding:12px 14px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--fg)}
+button{font:inherit;border:1px solid var(--line);background:var(--panel);color:var(--fg);border-radius:10px;padding:12px 16px;cursor:pointer}
+button.primary{background:var(--accent);color:var(--on-accent);border-color:var(--accent);font-weight:600}
+button:disabled{opacity:.45}
+.abcd{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.abcd button{font-size:44px;font-weight:700;height:min(26vw,130px);border-radius:var(--r);background:var(--surface)}
+.abcd button.sent{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+.ack{font-weight:600}
+.ack.OK{color:var(--ok)} .ack.wait{color:var(--warn)} .ack.err{color:var(--bad)}
+.timer{font-size:40px;font-weight:700;text-align:right}
+.row{display:flex;gap:10px;align-items:center;justify-content:space-between}
+details{font-size:14px}
+details .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+details label{display:grid;gap:4px;font-size:13px;color:var(--muted)}
+details input{font-size:16px;letter-spacing:0;padding:8px 10px}
+.log{font-size:12px;max-height:140px;overflow:auto;margin:8px 0 0;padding:0;list-style:none}
+.log li{padding:2px 0;border-bottom:1px dashed var(--line)}
+.abcd button.sel{outline:3px solid var(--accent);outline-offset:-3px}
+.abcd button.locked{background:var(--ok);color:var(--on-accent);border-color:var(--ok)}
+.abcd button.locked:disabled{opacity:1}
+.confirm{width:100%;margin-top:12px;font-size:20px;padding:16px}
+.lock{margin-top:12px;padding:12px 14px;border-radius:10px;font-weight:600}
+.lock.ok{background:color-mix(in srgb,var(--ok) 18%,transparent);color:var(--ok)}
+.lock.no{background:color-mix(in srgb,var(--bad) 15%,transparent);color:var(--bad)}
+.lock.wait{background:color-mix(in srgb,var(--warn) 15%,transparent);color:var(--warn)}
+.connect{width:100%;font-size:20px;padding:16px;margin-top:12px}
+.lcd{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:12px}
+.lcd .big{font-size:24px;letter-spacing:.04em}
+.timer-s{font-size:22px;font-weight:700}
+.pad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.key{font-size:28px;font-weight:700;height:min(17vw,76px);border-radius:12px;background:var(--surface);display:grid;place-items:center;line-height:1}
+.key small{display:block;font-size:12px;font-weight:600;color:var(--accent);margin-top:2px}
+.key.enter{font-size:16px;background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+.key.sel{outline:3px solid var(--accent);outline-offset:-3px}
+.key:active{transform:scale(.97)}
+</style>
+</head>
+<body>
+<header>
+  <div><b>Thiết bị <span class="mono" id="devNo">--</span></b> <span class="muted">· Bluetooth</span></div>
+  <div class="muted" style="font-size:14px"><span class="dot" id="dot"></span><span id="connTxt">chưa kết nối</span></div>
+</header>
+
+<main>
+  <div class="card" id="screen"></div>
+  <div class="card"><div class="row"><span class="muted">Phản hồi máy chủ</span><span class="ack" id="ack">—</span></div></div>
+
+  <details class="card">
+    <summary>Cài đặt thiết bị</summary>
+    <div class="grid">
+      <label>Số thiết bị (1–60)<input id="cfgDev" type="number" min="1" max="60" inputmode="numeric"></label>
+      <label>&nbsp;<button id="cfgSave" class="primary" type="button">Lưu</button></label>
+    </div>
+    <p class="muted" style="font-size:12px;margin:8px 0">Mỗi điện thoại một số khác nhau, khác số của thiết bị giả
+      (ví dụ thiết bị giả 1–50, điện thoại 51–60).</p>
+    <div class="row">
+      <button id="reboot" title="seq về 0, giống Pico bị khởi động lại">Mô phỏng khởi động lại</button>
+      <button id="disc">Ngắt Bluetooth</button>
+    </div>
+    <ul class="log" id="log"></ul>
+  </details>
+</main>
+
+<script>
+/* ===================================================================
+   Phone = clicker over Bluetooth, using the hardware team's protocol
+   (ble_receiver.py / mock_pico.py): service 0x1234, characteristics 0x5678 and 0x9abc,
+   JSON messages, commands MODE_1 / MODE_2 / MODE_3 / UNLOCK / ACK.
+
+   A browser can only CONNECT to a Bluetooth device, so the laptop plays the device side:
+       python scripts/ble_bridge.py --phone
+   phone -> laptop: write 0x5678   {"dev":59,"hello":true}   {"dev":59,"mssv":...,"seq":..}   {"dev":59,"q":2,"choice":3,"seq":..}
+   laptop -> phone: notify 0x9abc  {"dev":59,"cmd":"MODE_3","q":2,"n":4,"deadline_ms":..}
+                                   {"dev":59,"cmd":"ACK","kind":"answer","seq":..,"code":"OK","q":2,"choice":3}
+   Commands carry "dev": several phones share the characteristic and keep only their own.
+   Behaves like the hardware team's mock_pico.py (keypad 0-9, BACK, ENTER; choose then ENTER);
+   the line under the display shows the server's confirmation from the ACK.
+   =================================================================== */
+const $ = s => document.querySelector(s);
+const LETTERS = ['A','B','C','D'];
+const SVC = '00001234-0000-1000-8000-00805f9b34fb';
+const SVC_ALT = 'a5e1c0de-1234-4b1d-8e3a-5a2c7f0e1234';  // used by the laptop if Windows refuses 0x1234
+const TX  = '00005678-0000-1000-8000-00805f9b34fb';   // phone -> laptop (write)
+const RX  = '00009abc-0000-1000-8000-00805f9b34fb';   // laptop -> phone (notify)
+const ACK_TIMEOUT = 2000, TRIES = 3;
+const P = new URLSearchParams(location.search);
+const store = {
+  get(k, d){ try{ const v = localStorage.getItem('bleclicker.'+k); return v === null ? d : JSON.parse(v); }catch(e){ return d; } },
+  set(k, v){ try{ localStorage.setItem('bleclicker.'+k, JSON.stringify(v)); }catch(e){} },
+};
+const D = {
+  dev: +(P.get('dev') || store.get('dev', 51 + Math.floor(Math.random()*10))),
+  seq: 0, mssv: store.get('mssv', ''),
+  mode: 0,                      // 0 = not connected yet, then 1 / 2 / 3 from the laptop
+  q: null, n: 4, deadlineAt: 0,
+  registered: false, regError: '',
+  buf: '', choice: null, lockedKeys: false, lockedChoice: null,
+  pending: null,
+};
+D.seq = store.get('seq.' + D.dev, 0);
+let dev = null, txChar = null, tick = null, writing = Promise.resolve(), stopped = false;
+const pad = n => String(n).padStart(2,'0');
+
+/* ---------- Bluetooth ---------- */
+async function connect(showAll){
+  if (!navigator.bluetooth) {
+    setAck('Trình duyệt không hỗ trợ Bluetooth (xem hướng dẫn: Chrome Android + cờ secure origin)', 'err');
+    return;
+  }
+  try {
+    // normally: only devices that advertise the clicker service. "showAll": every nearby device,
+    // for phones/laptops where the service is not visible in the scan (pick the laptop's name)
+    dev = await navigator.bluetooth.requestDevice(showAll
+      ? {acceptAllDevices: true, optionalServices: [SVC, SVC_ALT]}
+      : {filters: [{services: [SVC]}, {services: [SVC_ALT]}], optionalServices: [SVC, SVC_ALT]});
+    dev.addEventListener('gattserverdisconnected', onDisconnected);
+    stopped = false;
+    await openGatt();
+  } catch (e) {
+    const msg = /getPrimaryService|No Services|not found/i.test(e.message)
+      ? 'thiết bị này không phải máy giáo viên (không có dịch vụ 0x1234)' : e.message;
+    setAck('không kết nối được: ' + msg, 'err'); log('lỗi: ' + e.message);
+  }
+}
+async function openGatt(){
+  setConn(false, 'đang kết nối…');
+  const server = await dev.gatt.connect();
+  let svc;
+  try { svc = await server.getPrimaryService(SVC); }
+  catch (e) { svc = await server.getPrimaryService(SVC_ALT); }
+  txChar = await svc.getCharacteristic(TX);
+  const rxChar = await svc.getCharacteristic(RX);
+  rxChar.addEventListener('characteristicvaluechanged', ev => onNotify(ev.target.value));
+  await rxChar.startNotifications();
+  setConn(true, 'đã kết nối');
+  log('kết nối Bluetooth: ' + (dev.name || dev.id));
+  write({dev: D.dev, hello: true});               // the laptop answers with the current mode
+}
+async function onDisconnected(){
+  setConn(false, 'mất kết nối…'); txChar = null; render();
+  for (let i = 0; i < 10 && !stopped; i++) {      // reconnect without asking again
+    await new Promise(r => setTimeout(r, 1000 * Math.min(2 ** i, 8)));
+    try { await openGatt(); return; } catch (e) { log('thử kết nối lại: ' + e.message); }
+  }
+}
+function write(obj){
+  const data = new TextEncoder().encode(JSON.stringify(obj));
+  writing = writing.then(async () => {           // one write at a time
+    if (!txChar) throw new Error('chưa kết nối');
+    if (txChar.writeValueWithResponse) await txChar.writeValueWithResponse(data);
+    else await txChar.writeValue(data);
+  }).catch(e => log('gửi lỗi: ' + e.message));
+  return writing;
+}
+function setConn(ok, txt){ $('#dot').classList.toggle('on', ok); $('#connTxt').textContent = txt; }
+
+/* ---------- the virtual Pico: same behaviour as the hardware team's mock_pico.py ----------
+   MODE_1  free: keys do nothing
+   MODE_2  MSSV: digits (max 8) -> {"dev","key":d};  BACK -> {"dev","key":"BACKSPACE"};
+                 ENTER -> {"dev","mssv","hw","seq"}
+   MODE_3  quiz: 1-4 select (nothing sent);  ENTER -> {"dev","q","choice","seq"} and the keys lock
+   commands: MODE_1 / MODE_2 / MODE_3 / UNLOCK / INVALID_MSSV (+ ACK: the server's confirmation)  */
+const LCD = {txt: '', cls: ''};               // feedback line under the display
+function status(txt, cls){ LCD.txt = txt; LCD.cls = cls; }
+
+function sendMsg(kind, body){                 // register / answer: numbered, wait for the server's ACK
+  if (D.pending) clearTimeout(D.pending.timer);
+  D.seq += 1; store.set('seq.' + D.dev, D.seq);
+  const msg = {dev: D.dev, ...body, seq: D.seq};
+  D.pending = {kind, msg, tries: 0, t0: performance.now()};
+  attempt();
+}
+function attempt(){
+  const p = D.pending; if (!p) return;
+  p.tries += 1;
+  write(p.msg);
+  log(`→ ${p.kind} ${JSON.stringify(p.msg)}${p.tries > 1 ? ' (gửi lại ' + p.tries + ')' : ''}`);
+  p.timer = setTimeout(() => {
+    if (D.pending !== p) return;
+    if (p.tries < TRIES) { attempt(); return; }
+    D.pending = null;
+    status('Không có phản hồi từ máy chủ', 'no');
+    if (p.kind === 'answer') { D.lockedKeys = false; }      // let the student confirm again
+    render();
+  }, ACK_TIMEOUT);
+}
+
+function press(k){                             // one button press on the virtual Pico
+  if (!txChar) return;
+  if (D.mode === 1) { log(`[MODE 1] nút ${k} hoạt động độc lập`); return; }
+  if (D.mode === 2) {
+    if (k === 'ENTER') {
+      if (!D.buf) return;
+      D.mssv = D.buf; store.set('mssv', D.buf);
+      sendMsg('register', {mssv: D.buf, hw: 'phone_ble'});
+      status('Đang gửi MSSV ' + D.buf + '…', 'wait');
+      D.buf = '';
+    } else if (k === 'BACK') {
+      if (!D.buf) return;
+      D.buf = D.buf.slice(0, -1);
+      write({dev: D.dev, key: 'BACKSPACE'});
+    } else if (D.buf.length < 8) {
+      D.buf += k;
+      write({dev: D.dev, key: k});
+    }
+    render(); return;
+  }
+  if (D.mode === 3) {
+    if (D.lockedKeys) { log('[MODE 3] đã khoá phím, chờ câu tiếp theo'); return; }
+    if (k === 'ENTER') {
+      if (!D.choice) return;
+      sendMsg('answer', {q: D.q || 1, choice: +D.choice});
+      D.lockedKeys = true;                        // like mock_pico.py: keys lock after ENTER
+      status('Đã gửi ' + LETTERS[D.choice - 1] + ' · chờ máy chủ xác nhận…', 'wait');
+    } else if (+k >= 1 && +k <= D.n) {
+      D.choice = k;
+      status('Đang chọn ' + LETTERS[k - 1] + ' · bấm ENTER để chốt', 'wait');
+    }
+    render();
+  }
+}
+
+/* ---------- commands from the laptop ---------- */
+const WHY = {
+  register: {NOT_IN_CLASS: 'MSSV không có trong danh sách lớp', DUP: 'MSSV đã được dùng trên thiết bị khác',
+             BAD: 'MSSV phải có 8 chữ số', CLOSED: 'đã hết thời gian đăng ký'},
+  answer:   {CLOSED: 'câu hỏi đã đóng / hết giờ', UNREGISTERED: 'thiết bị chưa đăng ký MSSV',
+             DUP: 'thiết bị vừa khởi động lại — nhập lại MSSV', BAD: 'tín hiệu bị lỗi'},
+};
+function onNotify(dataView){
+  let c; try { c = JSON.parse(new TextDecoder().decode(dataView)); } catch (e) { return; }
+  if (c.dev !== undefined && c.dev !== D.dev) return;          // for another phone
+  log('← ' + JSON.stringify(c));
+  if (c.cmd === 'MODE_1') { D.mode = 1; }
+  else if (c.cmd === 'MODE_2') { D.mode = 2; D.buf = ''; D.registered = false; }   // also after the teacher removed it
+  else if (c.cmd === 'MODE_3') {
+    if (c.q !== D.q || D.mode !== 3) { D.lockedKeys = false; D.choice = null; status('', ''); }
+    D.mode = 3; D.q = c.q ?? D.q; D.n = c.n || 4;
+    D.deadlineAt = c.deadline_ms != null ? Date.now() + c.deadline_ms : 0;
+  }
+  else if (c.cmd === 'UNLOCK') { D.lockedKeys = false; D.choice = null; }
+  else if (c.cmd === 'INVALID_MSSV') { D.mode = 2; D.buf = ''; status('MSSV không hợp lệ, nhập lại', 'no'); }
+  else if (c.cmd === 'ACK') onAck(c);
+  render();
+}
+function onAck(a){
+  const p = D.pending;
+  if (!p || a.seq !== p.msg.seq) return;                       // an ack for an older message
+  clearTimeout(p.timer); D.pending = null;
+  const ms = Math.round(performance.now() - p.t0);
+  if (a.kind === 'register') {
+    D.registered = a.code === 'OK';
+    status(D.registered ? `Đã đăng ký MSSV ${D.mssv} ✓ (${ms} ms)` : 'Chưa đăng ký: ' + (WHY.register[a.code] || a.code),
+           D.registered ? 'ok' : 'no');
+  } else if ((a.code === 'OK' || a.code === 'LOCKED') && a.choice) {
+    D.lockedKeys = true;
+    D.lockedChoice = a.choice;                                   // what the SERVER locked
+    status(`Đã khoá ${LETTERS[a.choice - 1]} ✓ máy chủ xác nhận (${ms} ms)`, 'ok');
+  } else {
+    if (a.code === 'UNREGISTERED' || a.code === 'DUP') D.registered = false;
+    if (a.code === 'BAD') D.lockedKeys = false;
+    status('Chưa khoá: ' + (WHY.answer[a.code] || a.code), 'no');
+  }
+}
+function setAck(t, cls){ const e = $('#ack'); e.textContent = t; e.className = 'ack ' + cls; }
+function log(t){
+  const li = document.createElement('li');
+  li.textContent = new Date().toLocaleTimeString() + '  ' + t;
+  $('#log').prepend(li);
+  while ($('#log').children.length > 40) $('#log').lastChild.remove();
+}
+
+/* ---------- screen + keypad ---------- */
+const KEYS = ['1','2','3','4','5','6','7','8','9','BACK','0','ENTER'];
+function render(){
+  const el = $('#screen');
+  clearInterval(tick);
+  $('#devNo').textContent = pad(D.dev);
+  if (!txChar) {
+    el.innerHTML = `<div class="phase">Bluetooth</div><div class="big">Kết nối với máy giáo viên</div>
+      <p class="muted" style="margin:6px 0 0">Máy tính phải đang chạy <span class="mono">ble_bridge.py --phone</span>.</p>
+      <button class="primary connect" id="connBtn">Kết nối Bluetooth</button>
+      <button class="connect" id="connAll" style="font-size:15px;padding:12px">Không thấy máy? Hiện tất cả thiết bị</button>
+      <p class="muted" style="font-size:13px;margin:10px 0 0">Cần bật Bluetooth <b>và</b> Vị trí (Location) trên điện thoại,
+        và cho Chrome quyền "Thiết bị ở gần".</p>`;
+    $('#connBtn').onclick = () => connect(false);  // requestDevice needs a tap
+    $('#connAll').onclick = () => connect(true);
+    return;
+  }
+  const title = {0: 'Đang đồng bộ…', 1: 'Chế độ 1 · chờ', 2: 'Chế độ 2 · nhập MSSV', 3: 'Chế độ 3 · trắc nghiệm'}[D.mode];
+  let main = '';
+  if (D.mode === 2) main = `<span class="mono">${(D.buf || '').padEnd(8, '_')}</span>`;
+  else if (D.mode === 3) main = `Câu ${D.q ?? '?'} · ${D.choice ? 'chọn ' + LETTERS[D.choice - 1] : 'chọn 1–' + D.n}`;
+  else main = D.registered ? `MSSV <span class="mono">${D.mssv}</span>` : 'Chờ giáo viên';
+  el.innerHTML = `
+    <div class="lcd">
+      <div class="row"><span class="phase">${title}</span><span class="mono timer-s" id="left"></span></div>
+      <div class="big">${main}</div>
+      ${LCD.txt ? `<div class="lock ${LCD.cls}">${LCD.txt}</div>` : ''}
+    </div>
+    <div class="pad">${KEYS.map(k => {
+      const lab = k === 'BACK' ? '⌫' : k;
+      const sub = D.mode === 3 && +k >= 1 && +k <= D.n ? `<small>${LETTERS[k - 1]}</small>` : '';
+      const on = D.mode === 3 && D.choice === k ? ' sel' : '';
+      return `<button data-k="${k}" class="key${k === 'ENTER' ? ' enter' : ''}${on}">${lab}${sub}</button>`;
+    }).join('')}</div>`;
+  el.querySelectorAll('[data-k]').forEach(b => b.onclick = () => press(b.dataset.k));
+  const draw = () => { const e = $('#left'); if (e) e.textContent = D.mode === 3 && D.deadlineAt ? Math.max(0, Math.ceil((D.deadlineAt - Date.now()) / 1000)) + 's' : ''; };
+  draw(); if (D.mode === 3) tick = setInterval(draw, 250);
+}
+document.addEventListener('keydown', e => {    // computer keyboard works too (testing)
+  if (e.target.tagName === 'INPUT') return;
+  if (/^[0-9]$/.test(e.key)) press(e.key);
+  else if (e.key === 'Enter') press('ENTER');
+  else if (e.key === 'Backspace') press('BACK');
+});
+
+/* ---------- settings ---------- */
+$('#cfgDev').value = D.dev;
+$('#cfgSave').onclick = () => {
+  const v = +$('#cfgDev').value;
+  if (!(v >= 1 && v <= 60)) { setAck('Số thiết bị phải từ 1 đến 60', 'err'); return; }
+  D.dev = v; store.set('dev', v); D.seq = store.get('seq.' + v, 0);
+  D.registered = false; D.buf = ''; D.choice = null; D.lockedKeys = false; status('', '');
+  if (txChar) write({dev: D.dev, hello: true});
+  render();
+};
+$('#reboot').onclick = () => {
+  D.seq = 0; store.set('seq.' + D.dev, 0); D.registered = false; D.pending = null;
+  D.buf = ''; D.choice = null; D.lockedKeys = false; D.mode = 2;
+  log('khởi động lại: seq = 0'); status('Đã khởi động lại (seq về 0)', 'wait'); render();
+};
+$('#disc').onclick = () => { stopped = true; if (dev && dev.gatt.connected) dev.gatt.disconnect(); };
+render();
+</script>
+</body>
+</html>

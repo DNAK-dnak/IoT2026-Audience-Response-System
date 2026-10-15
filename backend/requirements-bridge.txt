@@ -1,0 +1,12 @@
+# Only for scripts/ble_bridge.py, on the laptop with Bluetooth (not in Docker)
+bleak
+paho-mqtt>=2
+httpx
+# phone mode (--phone): Windows uses its own Bluetooth API (same packages bleak uses)
+winrt-runtime>=3.1; sys_platform == "win32"
+winrt-Windows.Devices.Bluetooth>=3.1; sys_platform == "win32"
+winrt-Windows.Devices.Bluetooth.GenericAttributeProfile>=3.1; sys_platform == "win32"
+winrt-Windows.Storage.Streams>=3.1; sys_platform == "win32"
+winrt-Windows.Foundation>=3.1; sys_platform == "win32"
+# phone mode on Linux / macOS
+bless; sys_platform != "win32"
