@@ -73,6 +73,8 @@ input[aria-invalid="true"]{border-color:var(--bad)}
 
 /* setup */
 .setup{grid-template-columns:minmax(0,1fr) 320px;align-items:start}
+.setup>.grid,.setup .card{min-width:0}
+code.fmt{max-width:100%}
 @media (max-width:980px){.setup{grid-template-columns:1fr}}
 .drop{border:1.5px dashed var(--line);border-radius:var(--r);padding:18px;text-align:center;cursor:pointer;background:var(--bg)}
 .drop.over{border-color:var(--accent);background:var(--accent-soft)}
@@ -86,10 +88,12 @@ tr:last-child td{border-bottom:0}
 .seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
 .seg button{border:0;background:var(--surface);padding:7px 12px;cursor:pointer}
 .seg button.on{background:var(--accent);color:var(--on-accent)}
+.seg button:disabled{opacity:.4;cursor:not-allowed}
 code.fmt{display:block;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px;font-family:var(--f-mono);font-size:12px;overflow-x:auto;white-space:pre}
 
 /* board */
-.board{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;align-items:start}
+.board{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;align-items:stretch}
+.board>.dt{align-self:start}
 @media (max-width:1100px){.board{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media (max-width:640px){.board{grid-template-columns:1fr}}
 .dt{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
@@ -105,7 +109,7 @@ code.fmt{display:block;background:var(--bg);border:1px solid var(--line);border-
 .ans.miss{background:var(--warn-soft);color:var(--warn);font-weight:500;font-family:var(--f-body);font-size:11px}
 .ans.wait{color:var(--muted)}
 .fix{color:var(--warn);font-size:10px;vertical-align:super}
-.third{display:grid;gap:14px}
+.third{display:flex;flex-direction:column;justify-content:space-between;gap:14px;min-width:0}
 .ctrl{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:16px;display:grid;gap:12px}
 .ctrl .btns{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .ctrl .btns .btn{justify-content:center}
@@ -133,8 +137,15 @@ code.fmt{display:block;background:var(--bg);border:1px solid var(--line);border-
 .recv{font-family:var(--f-mono);font-size:28px;font-weight:600}
 
 /* summary */
-.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
-@media (max-width:700px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}
+.hist5{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:8px;align-items:end;height:180px;position:relative;border-bottom:2px solid var(--fg);padding-top:24px}
+.hist5 .c{height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;font-family:var(--f-mono);font-size:12px;font-weight:600}
+.hist5 .c i{width:100%;border-radius:5px 5px 0 0;min-height:2px}
+.hist5 .ln{position:absolute;top:0;bottom:0;border-left:2px dashed;font-size:11px;font-weight:600;white-space:nowrap}
+.hist5 .ln span{position:absolute;left:5px;background:var(--surface);padding:0 3px}
+.hx5{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:8px;text-align:center;font-family:var(--f-mono);font-size:11px;color:var(--muted)}
+@media (max-width:900px){.kpis{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:560px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .kpi{padding:14px 16px}
 .kpi b{display:block;font-family:var(--f-mono);font-size:24px;font-weight:600}
 td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;font-family:var(--f-mono)}
@@ -183,7 +194,7 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;font-family:var
 .abcd.sm button{width:34px;height:30px}
 .mrow{display:grid;grid-template-columns:44px 96px minmax(0,1fr);gap:10px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line)}
 .mrow:last-child{border-bottom:0}
-.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.g2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 
@@ -272,10 +283,10 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;font-family:var
           </label>
           <input type="file" id="file" accept=".csv,.xlsx,.xls" hidden>
           <div class="field"><span class="label">Định dạng cột</span>
-            <code class="fmt" id="fmt">cau_hoi,A,B,C,D,dap_an,thoi_gian,delay
-"Độ phức tạp tìm kiếm nhị phân?",O(1),O(log n),O(n),O(n²),B,20,5</code>
+            <code class="fmt" id="fmt">cau_hoi,A,B,C,D,dap_an,thoi_gian,delay,chu_de
+"Độ phức tạp tìm kiếm nhị phân?",O(1),O(log n),O(n),O(n²),B,20,5,Tìm kiếm</code>
           </div>
-          <div class="row"><button class="btn sm" id="copyFmt">Sao chép dòng tiêu đề</button><span class="muted" style="font-size:12px">thoi_gian, delay tính bằng giây, có thể bỏ trống</span></div>
+          <div class="row"><button class="btn sm" id="copyFmt">Sao chép dòng tiêu đề</button><span class="muted" style="font-size:12px">thoi_gian, delay tính bằng giây; chu_de giúp AI gom cụm câu hỏi. Đều có thể bỏ trống.</span></div>
           <div class="field"><span class="label">Khi nhập</span>
             <div class="seg" id="importMode"><button data-v="replace" class="on" type="button">Thay thế</button><button data-v="append" type="button">Thêm vào cuối</button></div>
           </div>
@@ -299,8 +310,12 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;font-family:var
             <div class="field"><label class="label" for="defTime">Mỗi câu (giây)</label><input id="defTime" type="number" min="5" value="20"></div>
             <div class="field"><label class="label" for="defDelay">Delay (giây)</label><input id="defDelay" type="number" min="0" value="8"></div>
           </div>
-          <label class="row" style="gap:8px;font-size:13px"><input type="checkbox" id="useFileTime" checked style="width:auto">Ưu tiên thời gian có sẵn trong database / file</label>
-          <button class="btn" id="applyTime">Áp dụng cho các câu chưa có thời gian</button>
+          <div class="grid" style="gap:8px">
+            <button class="btn primary full" id="applyTimeAll">Áp dụng cho tất cả câu</button>
+            <button class="btn full" id="applyTime">Chỉ điền cho câu còn trống</button>
+          </div>
+          <span class="muted" style="font-size:12px" id="timeInfo"></span>
+          <label class="row" style="gap:8px;font-size:13px"><input type="checkbox" id="useFileTime" checked style="width:auto">Khi nhập file: giữ thời gian / delay có sẵn trong file</label>
         </div>
       </div>
     </div>
@@ -311,7 +326,10 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;font-family:var
 <section class="screen" id="s3" hidden>
   <div class="wrap grid">
     <div class="row" style="justify-content:space-between">
-      <div><h2 id="boardTitle">Bảng kiểm tra</h2><div class="muted" id="boardSub"></div></div>
+      <div class="row" style="gap:14px;align-items:flex-start">
+        <button class="btn" id="backSetup" title="Quay lại màn hình đề thi">← Đề thi</button>
+        <div><h2 id="boardTitle">Bảng kiểm tra</h2><div class="muted" id="boardSub"></div></div>
+      </div>
       <span class="pill mono" id="conn" title="Kết nối trực tiếp với máy chủ">máy chủ: …</span>
     </div>
     <div class="board" id="board"></div>
@@ -338,6 +356,7 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;font-family:var
         <div class="bar"><i id="recvBar" style="width:0"></i></div>
       </div>
       <div class="grid" style="gap:8px">
+        <button class="btn soft-warn" id="qPause" style="justify-content:center">Dừng câu hỏi</button>
         <button class="btn" id="qEnd" style="justify-content:center">Kết thúc câu</button>
       </div>
     </div>
@@ -352,7 +371,9 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;font-family:var
       <button class="btn" id="backBoard">← Bảng kiểm tra</button>
     </div>
     <div class="kpis" id="kpis"></div>
+    <div class="card grid" id="histCard"></div>
     <div class="card grid" id="finCard"></div>
+    <div class="card grid projcard" id="projCard"></div>
     <div class="card grid" id="aiCard" hidden></div>
     <div class="card" style="padding:0"><div class="tbl-wrap" style="border:0"><table>
       <thead><tr><th>#</th><th>ID thiết bị</th><th>MSSV</th><th class="num">Số câu đúng</th><th class="num">Không trả lời</th><th class="num">Điểm tổng (/10)</th></tr></thead>
@@ -443,7 +464,7 @@ const API={
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const L=['A','B','C','D'];
-const SLOTS=60;
+const SLOTS=50;            // tối đa 50 thiết bị: cột 1–2 mỗi cột 20, cột 3 có 10 + bảng điều khiển
 const REASONS=['Thiết bị mất kết nối giữa chừng','Thiết bị hết pin','Thiết bị lỗi phím / không gửi được','Sinh viên khiếu nại, đã xác minh','Khác'];
 
 const S={
@@ -459,7 +480,7 @@ const S={
   devices:[], cur:-1, phase:'idle', left:0, delayLeft:0, paused:false, total:20,
   timer:null, examId:null, savedSig:null, classId:null, session:null, live:null, deadlineAt:0, ovTab:'each', ovQ:0,
   online:true, pendingNext:false, hidden:new Set(),
-  fin:null, finInfo:{}, analysis:null, useAI:true
+  fin:null, finInfo:{}, analysis:null, useAI:true, projView:'dist', projQ:0, qPaused:null, sessSig:null
 };
 
 /* ---------- hàng đợi gửi lại (lưu trong trình duyệt, tự gửi khi có mạng) ---------- */
@@ -518,8 +539,8 @@ function show(id){
   window.scrollTo(0,0);
   if(id==='s2'){renderQ();refreshClass();}
   if(id==='s3') renderBoard();
-  if(id==='s5') renderSummary();
-  if(id==='s6') renderOverview();
+  if(id==='s5'){$('#aiCard').before($('#projCard'));renderSummary();}
+  if(id==='s6'){$('#ovTabs').closest('.row').after($('#projCard'));renderOverview();renderProjCtrl();}
   proj();
 }
 function toast(m){const t=$('#toast');t.textContent=m;t.hidden=false;clearTimeout(t._t);t._t=setTimeout(()=>t.hidden=true,2600);}
@@ -608,7 +629,7 @@ function renderQ(){
   $('#qCount').textContent=S.questions.length;
   $('#qBody').innerHTML=S.questions.length?S.questions.map((q,i)=>`<tr>
     <td class="mono muted">${i+1}</td>
-    <td class="qtext">${esc(q.q)}<div class="muted" style="font-size:12px">${q.o.map((o,j)=>`${L[j]}. ${esc(o)}`).join(' · ')}</div></td>
+    <td class="qtext">${q.topic?`<span class="pill" style="font-size:11px;margin-right:6px">${esc(q.topic)}</span>`:''}${esc(q.q)}<div class="muted" style="font-size:12px">${q.o.map((o,j)=>`${L[j]}. ${esc(o)}`).join(' · ')}</div></td>
     <td><span class="pill mono">${q.a}</span></td>
     <td class="num">${q.time??'<span class="muted">—</span>'}s</td>
     <td class="num">${q.delay??'<span class="muted">—</span>'}s</td>
@@ -627,6 +648,7 @@ function editQ(i,after){
   const q=i>=0?S.questions[i]:{q:'',o:['','','',''],a:'A',time:+$('#defTime').value,delay:+$('#defDelay').value};
   modal(`<h3>${i>=0?'Sửa câu '+(i+1):'Thêm câu hỏi'}</h3>
     <div class="field"><label class="label" for="eq">Nội dung</label><textarea id="eq" rows="3">${esc(q.q)}</textarea></div>
+    <div class="field"><label class="label" for="etp">Chủ đề / cụm kiến thức (tùy chọn)</label><input id="etp" value="${esc(q.topic||'')}" placeholder="VD: Cây nhị phân"></div>
     ${L.map((l,j)=>`<div class="field"><label class="label" for="eo${j}">Đáp án ${l}</label><input id="eo${j}" value="${esc(q.o[j])}"></div>`).join('')}
     <div class="field"><span class="label">Đáp án đúng</span><div class="abcd" id="ea">${L.map(l=>`<button type="button" data-v="${l}" class="${l===q.a?'on':''}">${l}</button>`).join('')}</div></div>
     <div class="g2"><div class="field"><label class="label" for="et">Thời gian (giây)</label><input id="et" type="number" min="5" value="${q.time??''}"></div>
@@ -640,7 +662,7 @@ function editQ(i,after){
     m.querySelector('[data-x]').onclick=close;
     m.querySelector('[data-ok]').onclick=()=>{
       const nq={q:m.querySelector('#eq').value.trim(),o:L.map((_,j)=>m.querySelector('#eo'+j).value.trim()),a,
-        time:+m.querySelector('#et').value||null,delay:m.querySelector('#ed').value===''?null:+m.querySelector('#ed').value};
+        time:+m.querySelector('#et').value||null,delay:m.querySelector('#ed').value===''?null:+m.querySelector('#ed').value,topic:m.querySelector('#etp').value.trim()};
       if(!nq.q||nq.o.some(x=>!x)){m.querySelector('#eerr').textContent='Điền nội dung câu hỏi và đủ 4 đáp án.';return;}
       if(i>=0)S.questions[i]=nq;else S.questions.push(nq);
       close(); if(after){after();gradeChanged();}else renderQ(); toast(after?'Đã lưu và chấm lại':'Đã lưu câu hỏi');
@@ -651,9 +673,29 @@ function editQ(i,after){
 function seg(id,key,cb){$(id).addEventListener('click',e=>{const v=e.target.dataset.v;if(!v)return;S[key]=v;$$(id+' button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));cb&&cb();});}
 const modeHint=()=>$('#modeHint').textContent=S.timerMode==='auto'?'Hết giờ → hiện bảng kết quả → tự sang câu tiếp sau khoảng delay.':'Hết giờ → hiện bảng kết quả → chờ giáo viên bấm “Tiếp tục”.';
 seg('#timerMode','timerMode',modeHint); seg('#importMode','importMode'); modeHint();
-$('#applyTime').onclick=()=>{const t=+$('#defTime').value,d=+$('#defDelay').value;let n=0;
-  S.questions.forEach(q=>{if(!$('#useFileTime').checked||!q.time){q.time=t;n++;}if(!$('#useFileTime').checked||q.delay==null)q.delay=d;});renderQ();toast('Đã áp dụng cho '+n+' câu');};
-$('#copyFmt').onclick=()=>{const s='cau_hoi,A,B,C,D,dap_an,thoi_gian,delay';navigator.clipboard?.writeText(s).then(()=>toast('Đã sao chép'),()=>selectText($('#fmt')))??selectText($('#fmt'));};
+function readTimes(){              // đọc và kiểm tra 2 ô "Mỗi câu" và "Delay"
+  const t=Math.round(+$('#defTime').value), d=Math.round(+$('#defDelay').value);
+  const bt=!$('#defTime').value||!(t>=5), bd=$('#defDelay').value===''||!(d>=0);
+  setInvalid($('#defTime'),bt); setInvalid($('#defDelay'),bd);
+  if(bt){toast('Thời gian mỗi câu phải từ 5 giây trở lên.');return null;}
+  if(bd){toast('Delay phải từ 0 giây trở lên.');return null;}
+  return{t,d};
+}
+$('#applyTimeAll').onclick=()=>{
+  const v=readTimes(); if(!v)return;
+  if(!S.questions.length){toast('Đề chưa có câu hỏi.');return;}
+  const run=()=>{S.questions.forEach(q=>{q.time=v.t;q.delay=v.d;});renderQ();toast(`Đã đặt ${v.t}s / delay ${v.d}s cho cả ${S.questions.length} câu`);};
+  const diff=S.questions.filter(q=>q.time!==v.t||q.delay!==v.d).length;
+  if(!diff){toast('Tất cả câu đã có đúng thời gian này.');return;}
+  confirmBox('Áp dụng cho tất cả câu?',`${diff} câu có thời gian hoặc delay khác sẽ được ghi đè thành <b class="mono">${v.t}s</b> và delay <b class="mono">${v.d}s</b>, kể cả câu đã có sẵn thời gian từ file.`,'Áp dụng cho tất cả','primary',run);
+};
+$('#applyTime').onclick=()=>{
+  const v=readTimes(); if(!v)return; let n=0;
+  S.questions.forEach(q=>{let c=false;if(!q.time){q.time=v.t;c=true;}if(q.delay==null){q.delay=v.d;c=true;}if(c)n++;});
+  renderQ(); toast(n?'Đã điền thời gian cho '+n+' câu còn trống':'Không có câu nào còn trống. Dùng “Áp dụng cho tất cả câu” để ghi đè.');
+};
+['#defTime','#defDelay'].forEach(s=>$(s).addEventListener('input',e=>setInvalid(e.target,false)));
+$('#copyFmt').onclick=()=>{const s='cau_hoi,A,B,C,D,dap_an,thoi_gian,delay,chu_de';navigator.clipboard?.writeText(s).then(()=>toast('Đã sao chép'),()=>selectText($('#fmt')))??selectText($('#fmt'));};
 function selectText(el){const r=document.createRange();r.selectNodeContents(el);const s=getSelection();s.removeAllRanges();s.addRange(r);toast('Đã chọn sẵn, bấm Ctrl+C');}
 
 /* import CSV/Excel */
@@ -674,7 +716,7 @@ function readFile(f){
       const out=[],bad=[];
       rows.forEach((r,i)=>{
         const q={q:pick(r,['cauhoi','question','noidung','q']),o:[pick(r,['a','dapana']),pick(r,['b','dapanb']),pick(r,['c','dapanc']),pick(r,['d','dapand'])],
-          a:pick(r,['dapan','answer','dapandung','correct']).toUpperCase(),time:+pick(r,['thoigian','time'])||null,delay:pick(r,['delay','nghi'])===''?null:+pick(r,['delay','nghi'])};
+          a:pick(r,['dapan','answer','dapandung','correct']).toUpperCase(),time:+pick(r,['thoigian','time'])||null,delay:pick(r,['delay','nghi'])===''?null:+pick(r,['delay','nghi']),topic:pick(r,['chude','topic','chuong','nhom'])||''};
         if(q.q&&q.o.every(Boolean)&&L.includes(q.a))out.push(q);else bad.push(i+2);
       });
       if(!out.length){toast('Không đọc được câu nào. Kiểm tra lại tên cột theo định dạng mẫu.');return;}
@@ -737,8 +779,11 @@ function readClassFile(f){
 }
 
 /* ---------- phiên kiểm tra ---------- */
+const sessSig=()=>quizSig()+'|'+$('#cls').value.trim();
 $('#toBoard').onclick=async()=>{
   if(!S.questions.length){toast('Thêm ít nhất 1 câu hỏi trước khi kiểm tra.');return;}
+  // phiên đăng ký vẫn mở và đề/lớp không đổi: quay lại bảng, giữ nguyên thiết bị đã đăng ký
+  if(S.session&&S.live&&S.phase==='idle'&&S.sessSig===sessSig()){show('s3');toast('Tiếp tục phiên #'+S.session.id+' · giữ '+S.devices.length+' thiết bị đã đăng ký');return;}
   const b=$('#toBoard'); b.disabled=true;
   try{
     await saveQuiz(); await refreshClass();
@@ -748,7 +793,7 @@ $('#toBoard').onclick=async()=>{
   }catch(e){toast('Không tạo được phiên: '+e.message);}
   b.disabled=false;
 };
-function resetRun(){S.devices=[];S.cur=-1;S.phase='idle';S.paused=false;S.pendingNext=false;S.hidden=new Set();S.fin=null;S.finInfo={};S.analysis=null;}
+function resetRun(){S.devices=[];S.cur=-1;S.phase='idle';S.paused=false;S.pendingNext=false;S.hidden=new Set();S.fin=null;S.finInfo={};S.analysis=null;S.projView='dist';S.projQ=0;S.qPaused=null;}
 async function newSession(){        // kết thúc phiên cũ (nếu có) rồi mở phiên mới ở trạng thái đăng ký
   await endSession();
   const old=await ARS.activeSession(ROOM);            // phiên bị bỏ quên (tab khác, console…)
@@ -756,6 +801,7 @@ async function newSession(){        // kết thúc phiên cũ (nếu có) rồi 
   resetRun();
   S.session=await ARS.createSession({quizId:S.examId,room:ROOM,classId:S.classId});
   await ARS.start(S.session.id);                     // IDLE -> REGISTER: thiết bị bắt đầu đăng ký
+  S.sessSig=sessSig();
   openLive();
 }
 async function endSession(){
@@ -802,6 +848,15 @@ async function reloadDevices(){     // lấy thiết bị + đáp án thật t�
 function applyState(st){            // trạng thái máy chủ -> màn hình
   const q=(st.q??st.current_q??0)-1;
   if(st.phase==='REGISTER'){if(S.phase!=='idle'){S.phase='idle';S.cur=-1;}if(S.screen==='s3')renderBoard();}
+  else if(S.phase==='paused'&&S.cur===q&&st.phase!=='ENDED'){  // đang tạm dừng câu này
+    const P=S.qPaused;
+    if(st.phase==='QUESTION_OPEN'&&P.resuming){if(st.deadlineAt)S.deadlineAt=st.deadlineAt;S.qPaused=null;startQuestion(q);}
+    else if(st.phase==='QUESTION_CLOSED'){
+      P.closed=true;
+      if(P.ending){S.qPaused=null;endQuestion();}
+      else reloadDevices().catch(()=>{}).finally(()=>{if(S.screen==='s3')renderBoard();});
+    }
+  }
   else if(st.phase==='QUESTION_OPEN'){
     if(st.deadlineAt)S.deadlineAt=st.deadlineAt;
     if(!(S.phase==='question'&&S.cur===q))startQuestion(q);
@@ -819,7 +874,7 @@ function setOnline(ok){
   const was=S.online; S.online=ok;
   const c=$('#conn'); if(c){c.textContent=ok?'máy chủ: đã kết nối':'máy chủ: mất kết nối…';c.style.color=ok?'var(--ok)':'var(--bad)';}
   $('#netBanner').hidden=ok||!S.session;
-  $('#qEnd').disabled=!ok;
+  $('#qEnd').disabled=!ok; $('#qPause').disabled=!ok;
   if(S.screen==='s3')renderBoard();
   if(ok&&!was){
     Outbox.flush();
@@ -839,7 +894,8 @@ function openLive(){
     },
     onDevice:d=>{
       S.hidden.delete(d.dev);                         // thiết bị đăng ký lại sau khi bị xóa
-      if(!S.devices.some(x=>x.dev===d.dev))S.devices.push(mkDev(d.dev,d.mssv,d.full_name));
+      if(!S.devices.some(x=>x.dev===d.dev)){S.devices.push(mkDev(d.dev,d.mssv,d.full_name));
+        if(S.devices.length>SLOTS)toast(`Đã vượt quá ${SLOTS} thiết bị: thiết bị ${String(d.dev).padStart(2,'0')} không hiển thị trên bảng. Xóa bớt thiết bị thừa.`);}
       S.devices.sort((a,b)=>a.dev-b.dev);
       if(S.screen==='s3')renderBoard(); proj();
     },
@@ -865,7 +921,7 @@ const fixTag=f=>f?`<span class="fix">${f.manual?'TAY':'KN'}</span>`:'';
 function ansCell(d){
   if(S.cur<0)return `<td class="ans wait">—</td>`;
   const q=S.questions[S.cur], v=d.ans[S.cur], fx=fixTag(d.fix[S.cur]);
-  if(S.phase==='question')return `<td class="ans wait">${v?'✓':'…'}</td>`;
+  if(S.phase==='question'||S.phase==='paused')return `<td class="ans wait">${v?'✓':'…'}</td>`;
   if(!v)return `<td class="ans miss">Chưa nhận</td>`;
   return `<td class="ans ${v===q.a?'ok':'bad'}">${v}${fx}</td>`;
 }
@@ -892,35 +948,37 @@ function renderBoard(){
     else st=`Xem kết quả câu ${S.cur+1}. Bấm vào dòng để xử lý khiếu nại.`;
   }
   else if(S.phase==='done')st='Đã hoàn thành. Bấm “Xem tổng kết” để chấm điểm và lưu kết quả.';
+  else if(S.phase==='paused')st=`<b>Câu ${S.cur+1} đang tạm dừng</b> · còn <b class="mono">${S.qPaused.left}s</b>. Màn hình chiếu đang ở trạng thái chờ.${S.qPaused.resuming?' Đang mở lại…':''}`;
   else st='Đang trong câu hỏi.';
   if(!S.online&&S.session)st+='<br><span style="color:var(--bad)">Mất kết nối máy chủ: các nút điều khiển tạm khóa.</span>';
-  const isLast=S.cur>=n-1, off=!S.online;
+  const isLast=S.cur>=n-1, off=!S.online, P=S.qPaused;
   const ctrl=`<div class="ctrl">
     <span class="label">Điều khiển</span>
     <div class="state">${st}</div>
-    <div class="stat"><span>Thiết bị đã kết nối</span><b>${S.devices.length}/${SLOTS}</b></div>
+    <div class="stat"><span>Thiết bị đã kết nối</span><b style="${S.devices.length>SLOTS?'color:var(--bad)':''}">${S.devices.length}/${SLOTS}</b></div>
     <div class="stat"><span>Tiến độ</span><b>${Math.max(0,S.cur+1)}/${n} câu</b></div>
     ${S.cur>=0?`<div class="stat"><span>Câu ${S.cur+1}: đã gửi / đúng</span><b>${answered} / ${right}</b></div>`:''}
     <div class="bar"><i style="width:${n?Math.max(0,S.cur+1)/n*100:0}%"></i></div>
     <div class="btns">
       <button class="btn primary" id="bStart" ${S.phase!=='idle'||!S.devices.length||off?'disabled':''}>Bắt đầu</button>
-      <button class="btn primary" id="bNext" ${(S.phase!=='review'&&S.phase!=='done')||(off&&S.phase!=='done')?'disabled':''}>${S.phase==='done'?'Xem tổng kết':isLast&&S.phase==='review'?'Tiếp tục → Tổng kết':'Tiếp tục'}</button>
-      <button class="btn soft-warn" id="bPause" ${S.phase!=='review'||S.paused||S.timerMode!=='auto'?'disabled':''}>Dừng</button>
-      <button class="btn soft-bad" id="bCancel" ${S.phase==='idle'||off?'disabled':''}>Hủy</button>
+      <button class="btn primary" id="bNext" ${S.phase==='paused'?(off||!P||!P.resumable||P.closed||P.resuming?'disabled':''):(S.phase!=='review'&&S.phase!=='done')||(off&&S.phase!=='done')?'disabled':''}>${S.phase==='done'?'Xem tổng kết':S.phase==='paused'?'Tiếp tục câu '+(S.cur+1):isLast&&S.phase==='review'?'Tiếp tục → Tổng kết':'Tiếp tục'}</button>
+      <button class="btn soft-bad" id="bCancel" ${S.phase==='idle'||off?'disabled':''} style="grid-column:1/-1">Hủy bài kiểm tra</button>
     </div>
+    ${S.phase==='paused'?`<button class="btn soft-warn full" id="bEndPaused" ${off&&!P.closed?'disabled':''}>Kết thúc câu ${S.cur+1} và xem kết quả</button>
+      <span class="muted" style="font-size:12px">${P.resumable&&!P.closed?'“Tiếp tục câu” mở lại câu hỏi với thời gian còn lại.':'Máy chủ chưa hỗ trợ tạm dừng nên câu đã được đóng; đáp án đã nhận được giữ lại.'}</span>`:''}
     ${S.phase==='idle'&&S.session?`<button class="btn soft-bad full" id="bClear" ${!S.devices.length?'disabled':''}>Xóa toàn bộ thiết bị (reset)</button>
       <span class="muted" style="font-size:12px">Bấm vào một dòng để xóa riêng thiết bị đó. Thiết bị bị xóa phải nhập lại MSSV.</span>`:''}
     ${(S.phase==='review'||S.phase==='done')&&S.cur>=0?`<button class="btn soft-warn full" id="bManual" ${!missing?'disabled':''}>Nhập tay đáp án thiếu (${missing})</button>
       <span class="muted" style="font-size:12px">Dùng khi đã xác nhận thiết bị mất kết nối. Bấm vào một dòng để khiếu nại hoặc sửa đáp án của riêng thiết bị đó.</span>`:''}
   </div>`;
-  $('#board').innerHTML=tableHTML(0,20)+tableHTML(20,40)+`<div class="third">${ctrl}${tableHTML(40,60)}</div>`;
+  $('#board').innerHTML=tableHTML(0,20)+tableHTML(20,40)+`<div class="third">${tableHTML(40,SLOTS)}${ctrl}</div>`;
 }
 $('#board').addEventListener('click',e=>{
   const b=e.target.closest('button');
   if(b){
     if(b.id==='bStart')confirmBox('Bắt đầu kiểm tra?',`${S.devices.length} thiết bị đã kết nối. Sau khi bắt đầu, thiết bị mới sẽ không vào được.`,'Bắt đầu','primary',()=>ARS.next(S.session.id).catch(e=>toast(e.message)));
-    if(b.id==='bNext')S.phase==='done'?show('s5'):next();
-    if(b.id==='bPause')confirmBox('Dừng bộ đếm?','Bộ đếm tự chuyển câu sẽ dừng. Bấm “Tiếp tục” khi sẵn sàng.','Dừng','soft-warn',()=>{S.paused=true;clearInterval(S.timer);renderBoard();proj();});
+    if(b.id==='bNext')S.phase==='done'?show('s5'):S.phase==='paused'?resumeQuestion():next();
+    if(b.id==='bEndPaused')endPausedQuestion();
     if(b.id==='bCancel')confirmBox('Hủy bài kiểm tra?','Phiên này kết thúc và một phiên mới được mở. Đáp án và MSSV đã đăng ký được xóa khỏi bảng; thiết bị phải đăng ký lại.','Hủy bài kiểm tra','soft-bad',cancelExam);
     if(b.id==='bClear')clearDevices();
     if(b.id==='bManual')manualEntry(S.cur,renderBoard);
@@ -1019,7 +1077,7 @@ function startQuestion(i){         // gọi khi máy chủ báo QUESTION_OPEN
   $('#qText').textContent=q.q;
   $('#qOpts').innerHTML=q.o.map((o,j)=>`<div class="opt"><b>${L[j]}</b><span>${esc(o)}</span></div>`).join('');
   $('#recvT').textContent=S.devices.length;
-  $('#qEnd').disabled=!S.online;
+  $('#qEnd').disabled=!S.online; $('#qPause').disabled=!S.online;
   show('s4'); drawQ(); S.timer=setInterval(tickQ,250);
 }
 const secLeft=()=>Math.max(0,Math.ceil((S.deadlineAt-Date.now())/1000));
@@ -1034,6 +1092,31 @@ function drawQ(){
 }
 $('#qEnd').onclick=()=>confirmBox('Kết thúc câu này?','Máy chủ sẽ ngừng nhận đáp án cho câu '+(S.cur+1)+'.','Kết thúc câu','primary',
   ()=>ARS.close(S.session.id).catch(e=>toast(e.message)));
+/* tạm dừng câu đang chạy: dừng đồng hồ, màn hình chiếu về trạng thái chờ, quay lại màn hình 3 */
+const canPause=()=>hasARS('pause')&&hasARS('resume');
+$('#qPause').onclick=()=>{
+  if(S.phase!=='question')return;
+  if(canPause())return pauseQuestion();
+  confirmBox('Dừng câu hỏi?','Máy chủ chưa hỗ trợ tạm dừng (ARS.pause), nên câu '+(S.cur+1)+' sẽ <b>đóng</b> và không mở lại được. Đáp án đã nhận được giữ lại.','Dừng câu','soft-warn',pauseQuestion);
+};
+function pauseQuestion(){
+  if(S.phase!=='question')return;
+  clearInterval(S.timer);
+  S.qPaused={q:S.cur,left:secLeft(),resumable:canPause(),closed:false,resuming:false,ending:false};
+  S.phase='paused'; $('#modalRoot').innerHTML='';
+  show('s3');
+  (canPause()?ARS.pause(S.session.id):ARS.close(S.session.id)).catch(e=>toast('Máy chủ: '+e.message));
+}
+function resumeQuestion(){
+  const P=S.qPaused; if(!P||!P.resumable||P.closed)return;
+  P.resuming=true; renderBoard();
+  ARS.resume(S.session.id,{seconds:Math.max(5,P.left)}).catch(e=>{P.resuming=false;renderBoard();toast('Không mở lại được: '+e.message);});
+}
+function endPausedQuestion(){
+  const P=S.qPaused; if(!P)return;
+  if(P.closed){S.qPaused=null;endQuestion();return;}
+  P.ending=true; ARS.close(S.session.id).catch(e=>{P.ending=false;toast(e.message);});
+}
 async function endQuestion(){       // gọi khi máy chủ báo QUESTION_CLOSED
   clearInterval(S.timer); S.phase='review'; S.paused=false; $('#modalRoot').innerHTML='';
   try{await reloadDevices();}catch(e){toast('Không tải được đáp án: '+e.message);}
@@ -1070,11 +1153,22 @@ function renderSummary(){
   $('#sumSub').textContent=`${$('#subj').value} · ${$('#cls').value} · ${S.questions.length} câu · ${S.devices.length} thiết bị`;
   const rs=S.devices.map((d,i)=>({d,i,...scoreOf(d)}));
   const sc=rs.map(r=>r.s), avg=sc.length?sc.reduce((a,b)=>a+b,0)/sc.length:0;
-  $('#kpis').innerHTML=[['Điểm trung bình',fmt(avg)],['Cao nhất',fmt(sc.length?Math.max(...sc):0)],['Thấp nhất',fmt(sc.length?Math.min(...sc):0)],['Đạt (≥ 5)',`${sc.filter(s=>s>=5).length}/${sc.length}`]]
+  const med=medianOf(sc);
+  $('#histCard').hidden=!sc.length;
+  if(sc.length){
+    const h=histogram(sc), mx=Math.max(1,...h), pos=x=>Math.min(10,Math.max(0,x))*10;
+    $('#histCard').innerHTML=`<div class="row" style="justify-content:space-between"><h3>Phổ điểm</h3>
+      <span class="hint"><span style="color:var(--accent)">┆ Trung bình ${fmt(avg)}</span> · <span style="color:var(--warn)">┆ Trung vị ${fmt(med)}</span></span></div>
+      <div><div class="hist5">${h.map((c,i)=>`<div class="c"><span>${c||''}</span><i style="height:${c/mx*85}%;background:${i<5?'var(--bad)':'var(--ok)'}"></i></div>`).join('')}
+        <div class="ln" style="left:${pos(avg)}%;border-color:var(--accent);color:var(--accent)"><span style="top:0">TB</span></div>
+        <div class="ln" style="left:${pos(med)}%;border-color:var(--warn);color:var(--warn)"><span style="top:16px">TV</span></div></div>
+      <div class="hx5" style="margin-top:6px">${h.map((_,i)=>`<span>${i}–${i+1}</span>`).join('')}</div></div>`;
+  }
+  $('#kpis').innerHTML=[['Điểm trung bình',fmt(avg)],['Trung vị',fmt(med)],['Cao nhất',fmt(sc.length?Math.max(...sc):0)],['Thấp nhất',fmt(sc.length?Math.min(...sc):0)],['Đạt (≥ 5)',`${sc.filter(s=>s>=5).length}/${sc.length}`]]
     .map(([k,v])=>`<div class="card kpi"><span class="label">${k}</span><b>${v}</b></div>`).join('');
   $('#sumBody').innerHTML=rs.map(r=>`<tr><td class="mono muted">${r.i+1}</td><td class="mono">${r.d.id}</td><td class="mono">${esc(r.d.mssv)}</td><td class="num">${r.c}/${S.questions.length}</td><td class="num">${r.miss||'<span class="muted">0</span>'}</td><td class="num score" style="color:${r.s>=5?'var(--ok)':'var(--bad)'}">${fmt(r.s)}</td></tr>`).join('')
     ||`<tr><td colspan="6" class="muted" style="text-align:center;padding:24px">Chưa có thiết bị nào.</td></tr>`;
-  renderFin();
+  renderFin(); renderProjCtrl();
 }
 function buildResults(){
   const qs=S.questions, n=S.devices.length;
@@ -1082,13 +1176,14 @@ function buildResults(){
   return{
     session_id:S.session?.id??null, quiz_id:S.examId, class_id:S.classId, class_code:$('#cls').value, subject:$('#subj').value, exam:$('#examName').value,
     teacher:S.user, finished_at:new Date().toISOString(), timer_mode:S.timerMode,
-    questions:qs.map((q,i)=>({n:i+1,question:q.q,options:q.o,answer:q.a,time:q.time,
+    max_score:10, pass_score:5,
+    questions:qs.map((q,i)=>({n:i+1,topic:q.topic||null,question:q.q,options:q.o,answer:q.a,time:q.time,
       correct_rate:n?S.devices.filter(d=>d.ans[i]===q.a).length/n:0,
       dist:Object.fromEntries([...L.map(l=>[l,S.devices.filter(d=>d.ans[i]===l).length]),['none',S.devices.filter(d=>!d.ans[i]).length]])})),
     students:rs.map(({d,c,miss,s})=>({dev:d.dev,device_id:d.id,mssv:d.mssv,name:d.name,answers:qs.map((_,i)=>d.ans[i]||null),
       correct:c,missing:miss,score:Math.round(s*100)/100,
       fixes:Object.entries(d.fix).map(([qi,f])=>({q:+qi+1,...f}))})),
-    stats:{count:n,avg:sc.length?sc.reduce((a,b)=>a+b,0)/sc.length:0,max:sc.length?Math.max(...sc):0,min:sc.length?Math.min(...sc):0,pass:sc.filter(s=>s>=5).length},
+    stats:{count:n,avg:sc.length?sc.reduce((a,b)=>a+b,0)/sc.length:0,median:medianOf(sc),max:sc.length?Math.max(...sc):0,min:sc.length?Math.min(...sc):0,pass:sc.filter(s=>s>=5).length},
     analysis:S.analysis,
   };
 }
@@ -1126,7 +1221,22 @@ function renderFin(){
 }
 function renderAI(){
   const c=$('#aiCard'); c.hidden=!S.analysis;
-  if(S.analysis)c.innerHTML=`<div class="row" style="justify-content:space-between"><h3>Phân tích của AI</h3><span class="hint">Tham khảo, giáo viên kiểm tra lại trước khi dùng</span></div><div class="ai">${mdLite(S.analysis)}</div>`;
+  if(!S.analysis)return;
+  c.innerHTML=`<div class="row" style="justify-content:space-between"><h3>Phân tích của AI</h3>
+    <div class="row" style="gap:8px"><span class="hint">Tham khảo, giáo viên kiểm tra lại trước khi dùng</span>
+    <button class="btn sm ${S.projView==='ai'?'':'primary'}" id="aiProj" ${S.projView==='ai'?'disabled':''}>${S.projView==='ai'?'Đang chiếu':'Chiếu lên màn hình chiếu'}</button></div></div>
+    <p class="hint">Màn hình chiếu chỉ hiện phần phân tích chung của lớp. Mục “Sinh viên cần hỗ trợ” và MSSV không được chiếu.</p>
+    <div class="ai">${mdLite(S.analysis)}</div>`;
+  $('#aiProj').onclick=()=>setProjView('ai');
+}
+function publicAnalysis(t){         // bản dùng cho màn hình chiếu: bỏ mục về từng sinh viên, che MSSV
+  const out=[];let skip=false;
+  for(const line of String(t).split('\n')){
+    const h=/^#{1,6}\s+(.*)/.exec(line.trim());
+    if(h)skip=/sinh viên cần|từng sinh viên|mssv/i.test(h[1]);
+    if(!skip)out.push(line);
+  }
+  return out.join('\n').replace(/\b\d{8}\b/g,'••••••••').trim();
 }
 function mdLite(t){                 // markdown tối giản: tiêu đề, gạch đầu dòng, đậm
   const inl=s=>esc(s).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>');
@@ -1143,11 +1253,11 @@ function mdLite(t){                 // markdown tối giản: tiêu đề, gạc
 async function finalize(){
   if(S.phase!=='done'){toast('Phiên chưa kết thúc.');return;}
   const ai=API.canAnalyze()&&S.useAI;
-  S.fin='running'; S.finInfo={ai:ai?'run':'none'}; renderFin();
+  S.fin='running'; S.finInfo={ai:ai?'run':'none'}; if(ai)S.projView='ai'; renderFin(); renderProjCtrl(); proj();
   if(ai){
     try{S.analysis=await API.analyze(buildResults());S.finInfo.ai='ok';}
-    catch(e){S.finInfo.ai='err';S.finInfo.aiErr=e.message;}
-    renderAI(); renderFin();
+    catch(e){S.finInfo.ai='err';S.finInfo.aiErr=e.message;if(S.projView==='ai')S.projView='dist';}
+    renderAI(); renderFin(); renderProjCtrl(); proj();
   }
   await Outbox.add('results',buildResults(),resultsKey());
   S.finInfo.saveTried=true; S.fin='done'; renderFin();
@@ -1171,6 +1281,18 @@ function exitExam(){
   if(pending){confirmBox('Kết quả chưa lên máy chủ','Kết quả vẫn nằm trong hàng đợi của trình duyệt này và sẽ tự gửi khi có kết nối. Đừng xóa dữ liệu trình duyệt. Nên tải Excel dự phòng trước khi thoát.','Vẫn thoát','primary',go);return;}
   go();
 }
+function backToSetup(){            // màn hình 3 -> màn hình 2
+  if(!S.session||S.phase==='idle'){
+    show('s2');
+    if(S.session)toast(`Phiên #${S.session.id} vẫn mở. Không đổi đề và lớp thì quay lại sẽ giữ ${S.devices.length} thiết bị đã đăng ký.`);
+    return;
+  }
+  if(S.phase==='done'){exitExam();return;}
+  confirmBox('Quay lại đề thi?',`Bài kiểm tra đang làm dở (câu ${S.cur+1}/${S.questions.length}) sẽ bị <b>hủy</b>. Đáp án đã nhận không được lưu; thiết bị phải đăng ký lại.`,'Hủy bài và quay lại','soft-bad',async()=>{
+    await endSession(); resetRun(); $('#netBanner').hidden=true; show('s2'); toast('Đã hủy bài kiểm tra');
+  });
+}
+$('#backSetup').onclick=backToSetup;
 function exportExcel(){
   if(typeof XLSX==='undefined'){toast('Không tải được thư viện Excel.');return;}
   const R=buildResults(), wb=XLSX.utils.book_new();
@@ -1221,7 +1343,8 @@ function renderOverview(){
       <tfoot><tr><td></td><td>% chính xác</td>${S.questions.map((_,i)=>`<td class="mono">${Math.round(pct(i))}%</td>`).join('')}<td></td></tr></tfoot>`;
   }
 }
-$('#qList').onclick=e=>{const b=e.target.closest('button');if(b){S.ovQ=+b.dataset.q;renderOverview();}};
+$('#qList').onclick=e=>{const b=e.target.closest('button');if(b){S.ovQ=+b.dataset.q;renderOverview();
+  if(S.phase==='done'&&S.projView==='q'){S.projQ=S.ovQ;renderProjCtrl();proj();}}};
 
 /* =========================================================
    MÀN HÌNH CHIẾU: projector.html mở ở cửa sổ riêng, nhận trạng thái
@@ -1232,7 +1355,7 @@ function projState(){
   const sc=S.screen;
   let mode='standby';
   if(S.session&&(sc==='s3'||sc==='s4'||sc==='s5'||sc==='s6')){
-    mode=S.phase==='idle'?'register':S.phase==='question'?'question':S.phase==='review'?'review':'done';
+    mode=S.phase==='idle'?'register':S.phase==='question'?'question':S.phase==='review'?'review':S.phase==='paused'?'paused':'done';
   }
   const q=S.cur>=0?S.questions[S.cur]:null;
   let nextInfo=null;
@@ -1246,10 +1369,56 @@ function projState(){
     title:$('#subj').value+' · '+$('#cls').value, exam:$('#examName').value,
     devices:S.devices.slice(0,SLOTS).map(d=>({id:d.id,mssv:d.mssv,done:S.cur>=0?!!d.ans[S.cur]:false})),
     q:q?{num:S.cur+1,total:S.questions.length,text:q.q,opts:q.o}:null,
-    deadlineAt:S.deadlineAt,totalSec:S.total,next:nextInfo};
+    deadlineAt:S.deadlineAt,totalSec:S.total,next:nextInfo,
+    summary:mode==='done'&&S.devices.length?(()=>{const sc=S.devices.map(d=>scoreOf(d).s);
+      return{count:sc.length,avg:sc.reduce((a,b)=>a+b,0)/sc.length,median:medianOf(sc),max:Math.max(...sc),min:Math.min(...sc),pass:sc.filter(x=>x>=5).length,
+        rates:S.questions.map((_,i)=>Math.round(pct(i))),hist:histogram(sc)};})():null,
+    view:mode==='done'?S.projView:null,
+    qd:mode==='done'&&S.projView==='q'&&S.questions.length?questionDist(Math.min(S.projQ,S.questions.length-1)):null,
+    ai:mode==='done'&&S.projView==='ai'?(S.finInfo.ai==='run'?{status:'run'}:S.analysis?{status:'ok',text:publicAnalysis(S.analysis)}:{status:'none'}):null};
 }
 function proj(){if(chan)try{chan.postMessage(projState());}catch(e){}}
-if(chan){chan.onmessage=e=>{if(e.data&&e.data.type==='hello')proj();};setInterval(proj,2000);}
+if(chan){chan.onmessage=e=>{
+  const d=e.data||{};
+  if(d.type==='hello')proj();
+  if(d.type==='nav'&&S.phase==='done'&&S.projView==='q')projGo(S.projQ+d.dir);   // phím ← → trên màn hình chiếu
+};setInterval(proj,2000);}
+/* phổ điểm thang 10: 10 cột 0–1, 1–2, …, 9–10 */
+function medianOf(a){if(!a.length)return 0;const s=[...a].sort((x,y)=>x-y),m=s.length>>1;return s.length%2?s[m]:(s[m-1]+s[m])/2;}
+function histogram(sc){const h=Array(10).fill(0);sc.forEach(x=>h[Math.min(9,Math.max(0,Math.floor(x+1e-9)))]++);return h;}
+function questionDist(i){
+  const q=S.questions[i];
+  return{num:i+1,total:S.questions.length,text:q.q,opts:q.o,topic:q.topic||'',correct:q.a,
+    counts:L.map(l=>S.devices.filter(d=>d.ans[i]===l).length),blank:S.devices.filter(d=>!d.ans[i]).length,n:S.devices.length};
+}
+const VIEWS=[['dist','Phổ điểm'],['q','Đáp án từng câu'],['ai','Phân tích AI'],['end','Màn hình chờ']];
+function setProjView(v){S.projView=v;if(v==='q'&&S.screen==='s6'&&S.ovTab==='each')S.projQ=S.ovQ;renderProjCtrl();renderAI();proj();}
+function projGo(i){
+  const n=S.questions.length; if(!n)return;
+  S.projQ=(i+n)%n;
+  if(S.screen==='s6'&&S.ovTab==='each'){S.ovQ=S.projQ;renderOverview();}
+  renderProjCtrl(); proj();
+}
+function renderProjCtrl(){
+  const el=$('#projCard'); if(!el)return;
+  if(S.phase!=='done'){el.hidden=true;return;}
+  el.hidden=false;
+  const hasAI=!!S.analysis||S.finInfo.ai==='run', n=S.questions.length;
+  el.innerHTML=`<div class="row" style="justify-content:space-between">
+      <div><h3>Màn hình chiếu</h3><div class="muted" style="font-size:13px">Chọn nội dung hiện trên máy chiếu sau khi kết thúc kiểm tra.</div></div>
+      <div class="seg" id="pvSeg">${VIEWS.map(([v,t])=>`<button type="button" data-v="${v}" class="${S.projView===v?'on':''}" ${v==='ai'&&!hasAI?'disabled title="Chưa có phân tích AI"':''}>${t}</button>`).join('')}</div>
+    </div>
+    ${S.projView==='q'?`<div class="row" style="gap:8px">
+      <button class="btn sm" id="pvPrev">◀ Câu trước</button>
+      <select id="pvSel" style="width:auto;min-width:220px">${S.questions.map((q,i)=>`<option value="${i}" ${i===S.projQ?'selected':''}>Câu ${i+1} · ${Math.round(pct(i))}% đúng</option>`).join('')}</select>
+      <button class="btn sm" id="pvNext">Câu sau ▶</button>
+      <span class="hint">Trên màn hình chiếu: phím ← → để chuyển câu. Ở trang Tổng quan, chọn câu nào thì máy chiếu hiện câu đó.</span></div>`:''}`;
+  el.querySelector('#pvSeg').onclick=e=>{const b=e.target.closest('button');if(b&&!b.disabled)setProjView(b.dataset.v);};
+  if(S.projView==='q'){
+    $('#pvPrev').onclick=()=>projGo(S.projQ-1); $('#pvNext').onclick=()=>projGo(S.projQ+1);
+    $('#pvSel').onchange=e=>projGo(+e.target.value);
+  }
+}
 $('#openProj').onclick=async()=>{
   let feat='popup,width=1280,height=720';
   try{ // nếu trình duyệt hỗ trợ, mở thẳng trên màn hình thứ hai
