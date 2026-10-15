@@ -8,7 +8,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    database_url: str
+    database_url: str = "postgresql://ars:ars_dev_pw@localhost:5432/ars"   # same as .env.example
     mqtt_host: str = "localhost"
     mqtt_port: int = 1883
     mqtt_user: str = ""          # empty = no username (local Mosquitto with anonymous access)

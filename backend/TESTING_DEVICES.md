@@ -18,6 +18,20 @@ real Picos later ─┘          (Docker)            + PostgreSQL        └─ 
 
 ---
 
+## 0. Shortcut: one command
+
+```powershell
+.\start.ps1                 # backend + teacher page + 50 fake devices (devices 1-50)
+.\start.ps1 -Pico -PicoIds 7  # + bridge for real PicoRemote clickers; fake devices skip number 07
+.\start.ps1 -Phone          # + bridge in phone mode (phone_ble.html)
+.\start.ps1 -Test all       # fake devices run a scenario; -Fake 0 = none; -Reset = clean database; -Watch = log windows
+.\stop.ps1                  # close the helper windows and stop the containers (data kept)
+```
+`start.ps1` checks Docker and the venv, starts the containers, waits for `/health`, opens one window
+per helper and the teacher page, and prints the addresses for phones. The sections below are the manual way.
+
+---
+
 ## 1. One-time setup
 
 1. Docker Desktop → Settings → General → tick **Start Docker Desktop when you sign in**.

@@ -1,7 +1,0 @@
-fastapi
-uvicorn[standard]
-psycopg[binary,pool]
-pydantic-settings
-aiomqtt>=2.5,<3
-httpx
-pytest

@@ -491,7 +491,16 @@ async def main(args) -> int:
         random.shuffle(plan)
     else:
         plan = [test] * len(mssvs)
-    devices = [Device(i + 1, m, s) for i, (m, s) in enumerate(zip(mssvs, plan))]
+    # device numbers 1, 2, 3 ... skipping the real clickers' numbers (--avoid-devs), so a real
+    # Pico (e.g. PicoRemote_7) never shares a number with a fake device
+    avoid = {int(x) for x in str(args.avoid_devs or "").replace(" ", "").split(",") if x}
+    numbers = [n for n in range(1, 61) if n not in avoid][: len(mssvs)]
+    if len(numbers) < len(mssvs):
+        print(f"WARNING: only {len(numbers)} free device numbers (1-60) - using {len(numbers)} fake devices")
+        mssvs, plan = mssvs[: len(numbers)], plan[: len(numbers)]
+    devices = [Device(n, m, s) for n, m, s in zip(numbers, mssvs, plan)]
+    if avoid:
+        print(f"device numbers {', '.join(f'{n:02d}' for n in sorted(avoid))} left free for real clickers")
     counts = {s: plan.count(s) for s in SCENARIOS if s in plan}
     print("devices per scenario: " + ", ".join(f"{s} {c}" for s, c in counts.items()))
 
@@ -519,6 +528,7 @@ if __name__ == "__main__":
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("-n", type=int, default=30, help="number of devices (default 30)")
     p.add_argument("--test", default="normal", choices=SCENARIOS + ["random", "all"], help="scenario (default normal)")
+    p.add_argument("--avoid-devs", metavar="NUMS", help='device numbers used by real clickers, e.g. "7" or "7,12": fake devices skip them')
     p.add_argument("--room", default="room1")
     p.add_argument("--broker", default="localhost")
     p.add_argument("--port", type=int, default=1884)

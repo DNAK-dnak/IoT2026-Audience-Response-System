@@ -5,7 +5,7 @@
   const AI_URL = 'http://localhost:8787';
   ARS.analyze = async function (sessionId, payload) {
     const ctrl = new AbortController();
-    const t = setTimeout(() => ctrl.abort(), 100000);
+    const t = setTimeout(() => ctrl.abort(), 170000);
     try {
       const r = await fetch(`${AI_URL}/api/sessions/${encodeURIComponent(sessionId ?? 'local')}/analyze`, {
         method: 'POST',
