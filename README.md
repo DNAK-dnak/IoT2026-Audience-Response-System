@@ -1,68 +1,75 @@
-# Phòng Thi Clicker: IoT Audience Response System
+# Phòng Thi Clicker: Hệ thống phản hồi lớp học IoT
 
-A classroom response system for up to 60 students. Each student answers multiple-choice
-questions on a Raspberry Pi Pico W clicker; the teacher runs the quiz from a web page and
-sees answers, scores and statistics live. Everything runs on one laptop, with no internet
-required (except for the optional AI summary of the results).
+Hệ thống trả lời trắc nghiệm cho lớp học tối đa 60 sinh viên. Mỗi sinh viên trả lời câu hỏi trắc
+nghiệm bằng một clicker Raspberry Pi Pico W; giáo viên điều khiển bài kiểm tra trên trang web và
+xem đáp án, điểm số, thống kê theo thời gian thực. Toàn bộ hệ thống chạy trên một laptop, không cần
+Internet (trừ bước AI tóm tắt kết quả, không bắt buộc).
 
-IoT course project, 2026.
+Đồ án môn IoT, 2026.
 
-## How it works
+## Thành viên nhóm
+
+- Hồ Ngọc Huy - 23134020
+- Phan Văn Khải - 23134028
+- Biện Lê Xuân Khoa - 23xxxxxx
+- Đoàn Nguyễn Anh Khoa - 23134030
+- Nguyễn Xuân Đăng Khoa - 23xxxxxx
+
+## Cách hoạt động
 
 ```mermaid
 flowchart LR
-    P["Pico W clicker"] -- BLE --> B["BLE bridge<br/>(laptop)"]
-    B -- MQTT --> M["Mosquitto<br/>broker"]
-    PH["Phone clicker<br/>(phone.html)"] -- "MQTT over WebSocket" --> M
-    M -- MQTT --> API["FastAPI backend"]
+    P["Clicker Pico W"] -- BLE --> B["Cầu nối BLE<br/>(laptop)"]
+    B -- MQTT --> M["Broker<br/>Mosquitto"]
+    PH["Clicker điện thoại<br/>(phone.html)"] -- "MQTT qua WebSocket" --> M
+    M -- MQTT --> API["Backend FastAPI"]
     API --> DB[("PostgreSQL")]
-    API -- "WebSocket + REST" --> T["Teacher page"]
-    T -- BroadcastChannel --> PR["Projector page"]
+    API -- "WebSocket + REST" --> T["Trang giáo viên"]
+    T -- BroadcastChannel --> PR["Màn hình chiếu"]
 ```
 
-1. The teacher opens a question. The backend publishes the state on MQTT; the bridge turns it
-   into a `MODE_3` command for every clicker.
-2. A student picks an answer and presses ENTER. The clicker sends JSON over BLE; the bridge
-   publishes it on MQTT.
-3. The backend stores the raw message, checks it (registered? deadline? already answered?),
-   locks the first confirmed answer and sends an acknowledgement back to that clicker.
-   The clicker shows "locked" only when that acknowledgement arrives.
-4. The teacher page receives live events over WebSocket. When the question closes it shows
-   right and wrong answers, statistics and the score distribution.
+1. Giáo viên mở câu hỏi. Backend phát trạng thái lên MQTT; cầu nối chuyển thành lệnh `MODE_3`
+   gửi tới mọi clicker.
+2. Sinh viên chọn đáp án và bấm ENTER. Clicker gửi JSON qua BLE; cầu nối đẩy lên MQTT.
+3. Backend lưu tin nhắn thô, kiểm tra (đã đăng ký chưa? còn hạn không? đã trả lời chưa?), khóa đáp
+   án xác nhận đầu tiên và gửi xác nhận (ack) về đúng clicker đó. Clicker chỉ hiện "đã khóa" khi
+   nhận được ack.
+4. Trang giáo viên nhận sự kiện trực tiếp qua WebSocket. Khi câu hỏi đóng, trang hiện đúng/sai,
+   thống kê và phân bố điểm.
 
-**Design in one line:** every part does one job and talks to the others through standard
-protocols (BLE, MQTT, HTTP, WebSocket). The backend is the only place that decides; devices only
-display what it confirms. More in [`backend/DECISIONS.md`](backend/DECISIONS.md).
+**Thiết kế trong một câu:** mỗi thành phần làm một việc và nói chuyện với nhau qua giao thức chuẩn
+(BLE, MQTT, HTTP, WebSocket). Backend là nơi quyết định duy nhất; thiết bị chỉ hiển thị những gì
+backend đã xác nhận. Chi tiết trong [`backend/DECISIONS.md`](backend/DECISIONS.md).
 
-## Features
+## Tính năng
 
-- **Quizzes:** write them on the page or import CSV/Excel; time limit and review delay per
-  question or for the whole quiz; automatic or manual move to the next question.
-- **Class lists:** import from Excel; only students on the list can register.
-- **Devices:** up to 60 clickers (Pico W over BLE, or phones); remove one or all during registration.
-- **Reliable answers:** the first confirmed answer is locked; resends after a lost signal are
-  recognised by sequence number and never counted twice; the server is the only clock.
-- **Live board** for the teacher and a separate **projector** screen for the class.
-- **Results:** % correct per question, answer distribution, ranking, score distribution,
-  Excel export.
-- **Complaints / manual entry:** stored separately from what the device sent; statistics update.
-- **AI summary** of the results (Gemini or Claude). The API key stays on the server and
-  student names are not sent.
-- **Teacher login** with hashed passwords and a lockout after repeated failures.
+- **Đề thi:** soạn trên trang hoặc nhập từ CSV/Excel; thời gian làm bài và thời gian xem đáp án
+  cho từng câu hoặc cả đề; chuyển câu tự động hoặc thủ công.
+- **Danh sách lớp:** nhập từ Excel; chỉ sinh viên có trong danh sách mới đăng ký được.
+- **Thiết bị:** tối đa 60 clicker (Pico W qua BLE, hoặc điện thoại); xóa một hoặc tất cả thiết bị
+  trong lúc đăng ký.
+- **Đáp án tin cậy:** đáp án xác nhận đầu tiên được khóa; tin gửi lại sau khi mất sóng được nhận ra
+  nhờ số thứ tự và không bao giờ bị đếm hai lần; đồng hồ duy nhất là của server.
+- **Bảng theo dõi trực tiếp** cho giáo viên và **màn hình chiếu** riêng cho cả lớp.
+- **Kết quả:** % đúng từng câu, phân bố đáp án, bảng xếp hạng, phân bố điểm, xuất Excel.
+- **Khiếu nại / nhập tay:** lưu riêng, không ghi đè dữ liệu thiết bị gửi; thống kê tự cập nhật.
+- **AI tóm tắt** kết quả (Gemini hoặc Claude). Khóa API chỉ nằm trên server và không gửi tên sinh
+  viên.
+- **Đăng nhập giáo viên:** mật khẩu được băm, khóa tài khoản tạm thời khi nhập sai nhiều lần.
 
-## Repository layout
+## Cấu trúc thư mục
 
-| Path | Contents |
+| Đường dẫn | Nội dung |
 |---|---|
-| [`backend/`](backend/) | Server (FastAPI), database (SQL), web pages, BLE bridge, test tools: **start here** |
-| [`backend/web/`](backend/web/) | Teacher page `index.html`, `projector.html`, phone clickers `phone.html` / `phone_ble.html` |
-| [`backend/scripts/`](backend/scripts/) | `ble_bridge.py` (clickers ↔ MQTT), `fake_devices.py` (simulated class), `demo_run.py` (end-to-end check) |
-| [`backend/sql/`](backend/sql/) | `schema.sql`, `seed.sql`, all queries (`queries.sql`), migrations |
-| `ble_receiver.py`, `mock_pico.py`, `BLE_receiver_tutorial.txt` | Hardware team's BLE receiver and a laptop simulation of the Pico |
+| [`backend/`](backend/) | Server (FastAPI), CSDL (SQL), trang web, cầu nối BLE, công cụ kiểm thử: **bắt đầu từ đây** |
+| [`backend/web/`](backend/web/) | Trang giáo viên `index.html`, `projector.html`, clicker điện thoại `phone.html` / `phone_ble.html` |
+| [`backend/scripts/`](backend/scripts/) | `ble_bridge.py` (clicker ↔ MQTT), `fake_devices.py` (lớp học giả lập), `demo_run.py` (kiểm tra đầu cuối) |
+| [`backend/sql/`](backend/sql/) | `schema.sql`, `seed.sql`, toàn bộ truy vấn (`queries.sql`), migration |
+| `ble_receiver.py`, `mock_pico.py`, `BLE_receiver_tutorial.txt` | Bộ nhận BLE của nhóm phần cứng và mô phỏng Pico trên laptop |
 
-## Quick start (Windows)
+## Chạy nhanh (Windows)
 
-You need **Docker Desktop** (running) and **Python 3.12+**.
+Cần **Docker Desktop** (đang chạy) và **Python 3.12+**.
 
 ```powershell
 cd backend
@@ -70,44 +77,44 @@ copy .env.example .env
 .\start.ps1
 ```
 
-`start.ps1` starts the database, broker and backend, prepares the database, and opens the
-teacher page at **http://127.0.0.1:8000/** with 50 simulated clickers. Log in with
-**GV001 / 123456**. Stop everything with `.\stop.ps1`.
+`start.ps1` khởi động CSDL, broker và backend, chuẩn bị CSDL, rồi mở trang giáo viên tại
+**http://127.0.0.1:8000/** cùng 50 clicker giả lập. Đăng nhập bằng **GV001 / 123456**. Dừng tất cả
+bằng `.\stop.ps1`.
 
-With real clickers: `.\start.ps1 -Pico -PicoIds 7`, where `7` is your Pico's number. The fake
-devices then skip that number. All options are in [`backend/README.md`](backend/README.md).
+Với clicker thật: `.\start.ps1 -Pico -PicoIds 7`, trong đó `7` là số của Pico. Thiết bị giả lập sẽ
+bỏ qua số này. Toàn bộ tùy chọn có trong [`backend/README.md`](backend/README.md).
 
-## Tech stack
+## Công nghệ
 
-| Part | Technology | Why |
+| Thành phần | Công nghệ | Lý do |
 |---|---|---|
-| Clicker | Raspberry Pi Pico W, MicroPython, BLE | Built-in Bluetooth, low power, no router needed |
-| Messaging | MQTT, Mosquitto | Lightweight IoT standard; publish/subscribe decouples devices from the server |
-| Backend | Python, FastAPI, asyncio | One process handles REST, WebSocket and MQTT at the same time |
-| Database | PostgreSQL 16 | Constraints reject bad data at the source; views compute the statistics |
-| Web | HTML/JavaScript (no build step) | Served by the backend, works offline |
-| Deployment | Docker Compose | One command; the same setup runs on a laptop or a server |
+| Clicker | Raspberry Pi Pico W, MicroPython, BLE | Có sẵn Bluetooth, tiết kiệm điện, không cần router |
+| Truyền tin | MQTT, Mosquitto | Chuẩn IoT nhẹ; publish/subscribe tách thiết bị khỏi server |
+| Backend | Python, FastAPI, asyncio | Một tiến trình xử lý REST, WebSocket và MQTT cùng lúc |
+| CSDL | PostgreSQL 16 | Ràng buộc chặn dữ liệu sai ngay từ gốc; view tính sẵn thống kê |
+| Web | HTML/JavaScript (không cần build) | Backend phục vụ trực tiếp, chạy không cần Internet |
+| Triển khai | Docker Compose | Một lệnh; cùng cấu hình chạy trên laptop hay server |
 
-## Testing
+## Kiểm thử
 
-| Check | Result |
+| Kiểm tra | Kết quả |
 |---|---|
-| Unit tests (`pytest`): rules, state machine, auth | 56/56 |
-| End-to-end demo (`scripts/demo_run.py`): REST + MQTT + WebSocket | 53/53 |
-| 50 simulated clickers, 8 scenarios (burst, packet loss, reboot, late answers…) | 0 lost or duplicated answers; all 50 acknowledged within 0.42 s when sending at the same instant |
-| Real Pico W through the BLE bridge | Registration, answers, lock and acknowledgement working |
+| Unit test (`pytest`): quy tắc, máy trạng thái, đăng nhập | 56/56 |
+| Demo đầu cuối (`scripts/demo_run.py`): REST + MQTT + WebSocket | 53/53 |
+| 50 clicker giả lập, 8 kịch bản (gửi dồn, mất gói, khởi động lại, trả lời muộn…) | Không mất, không trùng đáp án nào; cả 50 nhận ack trong 0,42 s khi gửi cùng lúc |
+| Pico W thật qua cầu nối BLE | Đăng ký, trả lời, khóa và ack hoạt động |
 
-See [`backend/TESTING_DEVICES.md`](backend/TESTING_DEVICES.md).
+Xem [`backend/TESTING_DEVICES.md`](backend/TESTING_DEVICES.md).
 
-## Documentation
+## Tài liệu
 
-- [`backend/README.md`](backend/README.md): running, configuration, API and MQTT reference, troubleshooting
-- [`backend/WALKTHROUGH.md`](backend/WALKTHROUGH.md): how the code works, file by file
-- [`backend/DECISIONS.md`](backend/DECISIONS.md): design decisions and why
-- [`backend/BLE_BRIDGE.md`](backend/BLE_BRIDGE.md): connecting the real clickers
-- [`backend/TESTING_DEVICES.md`](backend/TESTING_DEVICES.md): simulated devices, phones, test scenarios
-- [`backend/web/INTEGRATION_GUIDE.md`](backend/web/INTEGRATION_GUIDE.md): how the teacher page talks to the backend
+- [`backend/README.md`](backend/README.md): cách chạy, cấu hình, tham chiếu API và MQTT, xử lý lỗi
+- [`backend/WALKTHROUGH.md`](backend/WALKTHROUGH.md): giải thích code từng file
+- [`backend/DECISIONS.md`](backend/DECISIONS.md): các quyết định thiết kế và lý do
+- [`backend/BLE_BRIDGE.md`](backend/BLE_BRIDGE.md): kết nối clicker thật
+- [`backend/TESTING_DEVICES.md`](backend/TESTING_DEVICES.md): thiết bị giả lập, điện thoại, kịch bản kiểm thử
+- [`backend/web/INTEGRATION_GUIDE.md`](backend/web/INTEGRATION_GUIDE.md): cách trang giáo viên giao tiếp với backend
 
-## License
+## Giấy phép
 
-Apache License 2.0, see [`LICENSE`](LICENSE).
+Apache License 2.0, xem [`LICENSE`](LICENSE).
