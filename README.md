@@ -9,11 +9,11 @@ Internet (trừ bước AI tóm tắt kết quả, không bắt buộc).
 
 ## Thành viên nhóm
 
-- Hồ Ngọc Huy - 23134020
-- Phan Văn Khải - 23134028
-- Biện Lê Xuân Khoa - 23xxxxxx
-- Đoàn Nguyễn Anh Khoa - 23134030
-- Nguyễn Xuân Đăng Khoa - 23xxxxxx
+- Hồ Ngọc Huy               -     23134024
+- Phan Văn Khải             -     23134028
+- Biện Lê Xuân Khoa         -     23134029
+- Đoàn Nguyễn Anh Khoa      -     23134030
+- Nguyễn Xuân Đăng Khoa     -     23134031
 
 ## Cách hoạt động
 
