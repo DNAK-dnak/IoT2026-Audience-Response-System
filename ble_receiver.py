@@ -7,7 +7,7 @@ RX_CHAR_UUID = "00009abc-0000-1000-8000-00805f9b34fb" # Laptop -> Pico W
 TX_CHAR_UUID = "00005678-0000-1000-8000-00805f9b34fb" # Pico W -> Laptop
 
 # Giả lập Database và Trạng thái lớp học (Đổi thành "MODE_2" để test báo danh)
-GLOBAL_CLASS_MODE = "MODE_3"
+GLOBAL_CLASS_MODE = "MODE_3" 
 mock_database = {
     "7": {"mssv": "23134024", "verified": True} # Đã xác thực
 }
@@ -29,23 +29,23 @@ def notification_handler(sender, data):
     try:
         json_string = data.decode('utf-8')
         payload = json.loads(json_string)
-
+        
         dev_id = str(payload.get("dev", "Unknown"))
-
+        
         if "mssv" in payload:
             mssv = payload["mssv"]
             # Khi sinh viên nộp MSSV thành công, cập nhật Database tại đây
             mock_database[dev_id] = {"mssv": mssv, "verified": True}
             print(f"[BÁO DANH] Remote {dev_id} | MSSV: {mssv}")
-
+            
         elif "choice" in payload:
             answers_map = {1: 'A', 2: 'B', 3: 'C', 4: 'D'}
             answer_letter = answers_map.get(payload["choice"], "Lỗi phím")
             print(f"[TRẮC NGHIỆM] Remote {dev_id} | Câu {payload.get('q', 1)}: Chọn {answer_letter}")
-
+        
         elif "key" in payload:
             print(f"[GÕ PHÍM] Remote {dev_id} gõ: {payload['key']}")
-
+            
     except json.JSONDecodeError:
         pass
 
@@ -54,15 +54,15 @@ async def handle_connection(device):
     mac = device.address
     # Đánh dấu thiết bị này đang được xử lý để Radar bỏ qua
     active_connections.add(mac)
-
+    
     # BÓC TÁCH dev_id TỪ TÊN PHÁT SÓNG (VD: "PicoRemote_7" -> "7")
     name = device.name or "Unknown"
     dev_id = name.split("_")[-1] if "_" in name else "Unknown"
-
+    
     try:
         async with BleakClient(device) as client:
             print(f"\n[+] ĐÃ KẾT NỐI: Remote {dev_id} (MAC: {mac})")
-
+            
             # === THUẬT TOÁN ĐIỀU HƯỚNG TRẠNG THÁI (STATE RECOVERY) ===
             if GLOBAL_CLASS_MODE == "MODE_3":
                 if dev_id in mock_database and mock_database[dev_id].get("verified"):
@@ -71,18 +71,18 @@ async def handle_connection(device):
                 else:
                     print(f" -> Remote {dev_id} chưa báo danh! Tạm thời khóa ở chế độ chờ (MODE_1).")
                     await send_command_to_device(client, "MODE_1")
-
+                    
             elif GLOBAL_CLASS_MODE == "MODE_2":
                 print(f" -> Lớp đang báo danh. Yêu cầu Remote {dev_id} nhập MSSV.")
                 await send_command_to_device(client, "MODE_2")
-
+            
             # Mở hòm thư để lắng nghe sinh viên bấm nút
             await client.start_notify(TX_CHAR_UUID, notification_handler)
-
+            
             # Giữ luồng này sống chừng nào thiết bị còn kết nối
             while client.is_connected:
                 await asyncio.sleep(1)
-
+                
     except Exception as e:
         # Xảy ra khi mạch bị ngắt điện đột ngột hoặc rớt sóng
         pass
@@ -94,11 +94,11 @@ async def handle_connection(device):
 # 4. Luồng chính: Radar quét liên tục (Continuous Scanner)
 async def main():
     print(" 📡 HỆ THỐNG MÁY CHỦ ĐÃ BẬT. Đang dò tìm các mạch PicoRemote...")
-
+    
     while True:
         # Quét không gian trong 2 giây
         devices = await BleakScanner.discover(timeout=2.0)
-
+        
         for d in devices:
             # Chỉ bắt các thiết bị có tiền tố "PicoRemote" VÀ chưa được kết nối
             if d.name and d.name.startswith("PicoRemote"):
@@ -106,7 +106,7 @@ async def main():
                     print(f" [PHÁT HIỆN] {d.name} ({d.address}). Đang tiến hành móc nối...")
                     # Tạo một Task bất đồng bộ để xử lý thiết bị này, Radar đi quét tiếp
                     asyncio.create_task(handle_connection(d))
-
+                    
         # Nghỉ 0.5s trước khi quét vòng tiếp theo để tránh quá tải card Bluetooth
         await asyncio.sleep(0.5)
 
