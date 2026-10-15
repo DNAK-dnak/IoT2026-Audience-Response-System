@@ -62,6 +62,23 @@ ALT_SERVICE_UUID = "a5e1c0de-1234-4b1d-8e3a-5a2c7f0e1234"
 
 log = logging.getLogger("bridge")
 
+# --broken-key1: clickers whose physical key 1 does not work. The bridge shifts their keys
+# (physical 2 -> 1, 3 -> 2, ..., 9 -> 8; 0, ENTER and BACKSPACE unchanged; digit 9 is not available).
+# The firmware only sends keys 1-4 in MODE_3, so with key 1 broken it could never send D.
+# These clickers therefore answer in MODE_2: type the (physical) key, then ENTER. The bridge turns
+# that entry into a normal answer message, so the backend sees nothing special.
+KEY_SHIFT = str.maketrans({"2": "1", "3": "2", "4": "3", "5": "4", "6": "5",
+                           "7": "6", "8": "7", "9": "8", "1": None})   # a ghost "1" is dropped
+
+
+def parse_dev_list(text: str | None) -> set[int] | str:
+    """"all" -> "all";  "7,12" -> {7, 12};  None/"" -> empty set."""
+    if not text:
+        return set()
+    if text.strip().lower() == "all":
+        return "all"
+    return {int(x) for x in text.replace(" ", "").split(",") if x}
+
 
 # ===================================================================== bridge logic (no BLE here)
 class Bridge:
@@ -76,6 +93,11 @@ class Bridge:
         self.session_id: int | None = None
         self.server_seq: dict[int, int] = {}        # dev -> last_seq the backend holds (this session)
         self.fwd_max: dict[int, int] = {}           # dev -> highest seq the bridge has forwarded
+        self.broken_key1 = parse_dev_list(getattr(args, "broken_key1", None))
+        self.locked_q: dict[int, int] = {}          # --broken-key1 clickers: dev -> question already locked
+        if self.broken_key1:
+            log.info("key 1 broken on %s: keys shift 2->1 ... 9->8, answers are typed + ENTER",
+                     "all clickers" if self.broken_key1 == "all" else "devices " + ",".join(map(str, sorted(self.broken_key1))))
         self.mqtt = paho.Client(paho.CallbackAPIVersion.VERSION2, client_id=f"ble-bridge-{args.room}-{'phone' if getattr(args, 'phone', False) else 'pico'}")
         self.mqtt.on_connect = self._on_connect
         self.mqtt.on_message = lambda c, u, m: loop.call_soon_threadsafe(self._on_mqtt, m.topic, m.payload)
@@ -108,6 +130,9 @@ class Bridge:
         phase = self.state.get("phase")
         if phase == "REGISTER":
             return {"cmd": "MODE_1"} if dev in self.registered else {"cmd": "MODE_2"}
+        if phase == "QUESTION_OPEN" and dev in self.registered and self.key1_broken(dev):
+            # answer by typing one key + ENTER (MODE_2); wait once this question is locked
+            return {"cmd": "MODE_1"} if self.locked_q.get(dev) == self.state.get("q") else {"cmd": "MODE_2"}
         if phase == "QUESTION_OPEN" and dev in self.registered:
             cmd = {"cmd": "MODE_3", "q": self.state.get("q"), "n": self.state.get("n_choices", 4)}
             if self.state.get("deadline_ms") is not None:
@@ -115,12 +140,16 @@ class Bridge:
             return cmd
         return {"cmd": "MODE_1"}                    # IDLE, ENDED, CLOSED, or not registered
 
+    def key1_broken(self, dev: int | None) -> bool:
+        return dev is not None and (self.broken_key1 == "all" or dev in self.broken_key1)
+
     def _on_state(self, s: dict) -> None:
         old = self.state.get("phase")
         if s.get("phase") == "REGISTER" and old != "REGISTER":
             self.registered.clear()                 # a new session: everybody registers again
             self.server_seq.clear()                 # ... and seq numbering starts again at 1
             self.fwd_max.clear()
+            self.locked_q.clear()
             for link in self.links.values():
                 link.rebase_pending = True
             self.loop.create_task(self.refresh_session())
@@ -154,7 +183,14 @@ class Bridge:
                 link.send({"cmd": "MODE_2"})        # let the student type the MSSV again
         else:  # answer
             if code in ("OK", "LOCKED"):
+                if self.key1_broken(dev):           # MODE_2 does not lock the keys: switch to wait
+                    self.locked_q[dev] = ack.get("q", self.state.get("q"))
+                    link.send({"cmd": "MODE_1"})
                 return                              # locked: keys stay locked on the clicker
+            if self.key1_broken(dev) and phase == "QUESTION_OPEN" and code not in ("UNREGISTERED", "DUP"):
+                link.send({"cmd": "MODE_2"})        # e.g. BAD (key 6 for a 4-option question): type again
+                log.info("ack dev %02d answer seq %s -> %s (type again)", dev, ack.get("seq"), code)
+                return
             if code in ("UNREGISTERED", "DUP"):
                 self.registered.discard(dev)        # DUP here = seq behind after a reboot
                 link.send({"cmd": "MODE_2"} if code == "DUP" else {"cmd": "MODE_1"})
@@ -182,6 +218,17 @@ class Bridge:
         if learned:                                 # connected without a number in its name: now we know it
             log.info("clicker %s is device %02d", link.name, dev)
             link.send(self.command_for(dev))
+        if self.key1_broken(dev) and "mssv" in p:
+            typed = str(p["mssv"])
+            shifted = typed.translate(KEY_SHIFT)
+            if self.state.get("phase") == "QUESTION_OPEN" and dev in self.registered:
+                # an answer typed in MODE_2: one key + ENTER -> a normal answer message
+                choice = int(shifted) if shifted.isdigit() else 0          # 0 / 57 -> the backend says BAD
+                p = {"dev": dev, "q": self.state.get("q"), "choice": choice, "seq": p.get("seq")}
+                log.info("dev %02d (key 1 broken) typed %s -> answer %s", dev, typed, choice)
+            else:
+                p["mssv"] = shifted
+                log.info("dev %02d (key 1 broken) typed MSSV %s -> %s", dev, typed, shifted)
         if "mssv" in p:
             kind = "register"
         elif "choice" in p:
@@ -654,6 +701,9 @@ if __name__ == "__main__":
                         "0 = no limit, once the firmware enlarges its buffer and MTU)")
     p.add_argument("--no-fill-q", dest="fill_q", action="store_false",
                    help="send the clicker's own q (only when the firmware tracks the question number)")
+    p.add_argument("--broken-key1", metavar="DEVS",
+                   help='clickers whose key 1 is broken, e.g. "7,12" or "all": keys shift 2->1 ... 9->8, '
+                        'answers are typed as one key + ENTER')
     p.add_argument("--phone", action="store_true",
                    help="phone test mode: the laptop advertises, phones connect with phone_ble.html")
     p.add_argument("--name", default="ARS-Gateway", help="advertised name in phone mode (Linux only)")

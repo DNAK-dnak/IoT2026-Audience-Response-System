@@ -60,9 +60,13 @@ phone (phone_ble.html) ──Bluetooth: write 0x5678──► laptop: ble_bridge
                        ◄──Bluetooth: notify 0x9abc── (MODE_x, ACK)
 ```
 
-**Laptop (once):** `python -m pip install bless` (plus `requirements-bridge.txt`). Bluetooth on.
-**Run:** `docker compose up -d`, then `python scripts/ble_bridge.py --phone -v`
-(it can run at the same time as the normal Pico bridge).
+**Laptop (once):** `python -m pip install -r requirements-bridge.txt`. Bluetooth on.
+Check first: `python scripts/ble_bridge.py --check` must say `peripheral : yes`.
+**Run:** `docker compose up -d`, then `python scripts/ble_bridge.py --phone -v` (or `.\start.ps1 -Phone`).
+The log must show `advertising status: STARTED` and `phone mode: advertising service 1234`.
+
+On Windows the bridge uses Windows' own Bluetooth API (the `winrt` packages bleak already uses);
+`bless` is only used on Linux/macOS — its Windows part does not install on Python 3.13+.
 
 **Phone (Android + Chrome; on iPhone use the Bluefy browser):**
 1. The page must first be **loaded** once from the laptop over Wi-Fi/hotspot:
@@ -70,7 +74,9 @@ phone (phone_ble.html) ──Bluetooth: write 0x5678──► laptop: ble_bridge
    After loading, everything goes over Bluetooth.
 2. Chrome only allows Bluetooth on secure pages. Once: open `chrome://flags/#unsafely-treat-insecure-origin-as-secure`,
    add `http://<laptop IP>:8000`, set **Enabled**, tap **Relaunch**.
-3. Tap **Kết nối Bluetooth** → pick the laptop in the list (it may show the laptop's own name) → the phone
+3. Phone: Bluetooth **and Location** on; Chrome allowed "Nearby devices" (Android 12+) or Location.
+   Tap **Kết nối Bluetooth** → pick the laptop (it may show the laptop's own Bluetooth name or "Unknown device").
+   Empty list? Tap **Không thấy máy? Hiện tất cả thiết bị** and pick the laptop's name. Then the phone
    follows the session: MSSV → A–D → **Xác nhận** → "Đã khoá" only from the server's ACK.
 4. Each phone a different `?dev=` (51–60 if fake devices use 1–50) and an MSSV from the class list.
 
@@ -79,8 +85,12 @@ wired to the real bridge and backend — 13/13 checks (connect by service, modes
 lock from ACK, LOCKED, closed screen, question 2, database content). Not tested: the radio itself
 (Windows advertising with bless, Chrome's Bluetooth chooser) — try it once early.
 
-If `--phone` fails at start: the laptop's Bluetooth adapter may not support acting as a device
-(peripheral role). Try another laptop or a USB Bluetooth adapter.
+If the phone finds nothing, check in this order:
+1. `--check` says `peripheral : NO` → this laptop's adapter cannot act as a device: another laptop or a USB Bluetooth adapter.
+2. The bridge window shows no `advertising status: STARTED` → read its error; turn Bluetooth off/on and restart it.
+3. Install **nRF Connect** on the phone and scan: the laptop should appear with service `0x1234`.
+   Seen there but not in Chrome → phone settings (Location, Chrome permissions, the flag in step 2).
+   Not seen there either → the laptop is not advertising (back to 1–2).
 
 ## Note for the hardware team
 
@@ -93,3 +103,32 @@ expects `(service, char, properties, value, permissions)`. It may still work by 
   handful at once (often under 10, depends on the adapter). Enough for the demo with a few real clickers;
   60 needs the fake devices (or a different radio design).
 - The bridge runs on the laptop itself (Bluetooth is not available inside Docker).
+
+
+## A clicker with a broken key 1 (`--broken-key1`)
+
+Fixed in the bridge only: no firmware change, no backend change.
+
+```
+python scripts/ble_bridge.py --broken-key1 9        # device 9 only
+python scripts/ble_bridge.py --broken-key1 7,12     # several devices
+python scripts/ble_bridge.py --broken-key1 all      # every Pico
+.\start.ps1 -Pico -BrokenKey1 9                     # same, from the start script
+```
+
+For those clickers:
+
+| Physical key | Means |
+|---|---|
+| 2 3 4 5 6 7 8 9 | 1 2 3 4 5 6 7 8 |
+| 0, ENTER, BACKSPACE | unchanged |
+| 1 | ignored (a broken switch can fire on its own) |
+
+- **MSSV:** type it with the shifted keys. Example: 22134008 is typed as `3 3 2 4 5 0 0 9` + ENTER.
+  Digit 9 cannot be typed: a student whose MSSV contains a 9 uses another clicker or the phone page.
+- **Answers:** the firmware only sends keys 1–4 in answer mode, so with key 1 broken it could never send D.
+  These clickers therefore stay in the MSSV-typing mode (MODE_2) while a question is open: the student
+  presses one key and ENTER: **2 = A, 3 = B, 4 = C, 5 = D**. The bridge turns it into a normal answer;
+  after the server locks it, the clicker switches to MODE_1 (wait). A wrong key (e.g. 7) gets BAD and the
+  student types again.
+- The clicker's screen shows its MSSV prompt during questions; tell the student "press the letter's key, then ENTER".

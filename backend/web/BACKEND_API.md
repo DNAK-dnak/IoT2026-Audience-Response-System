@@ -62,7 +62,7 @@ Tất cả hàm trên đã có trong `ars-client.js`. Đường dẫn không có
 | `setAnswer` | `PUT /sessions/:id/answers` | bảng `answer_overrides` (chỉ thêm, không sửa đáp án gốc). Gửi lại y hệt → không tạo bản ghi mới. Câu đang mở hoặc chưa hỏi → 409. MSSV không khớp thiết bị → 409 |
 | `pageDevices` | `GET /sessions/:id/answers` | trả đáp án đã áp dụng sửa tay + `fix` (`from`, `to`, `reason`, `note`, `manual`, `by`, `at`) nên tải lại trang vẫn thấy khiếu nại |
 | `saveResults` | `POST /sessions/:id/results` | upsert theo `session_id`, có `version`; đọc lại: `GET /sessions/:id/saved-results` |
-| `analyze` | `POST /sessions/:id/analyze` → `{text}` | cần `ANTHROPIC_API_KEY` trong `.env`. Không có key: `ARS.analyze` bị gỡ, trang tự bỏ bước AI. Không gửi họ tên, mã GV, mã lớp |
+| `analyze` | `POST /sessions/:id/analyze` → `{text}` | cần `GEMINI_API_KEY` (hoặc `ANTHROPIC_API_KEY`) trong `.env`. Không có key: `ARS.analyze` bị gỡ, trang tự bỏ bước AI. Không gửi họ tên, mã GV, mã lớp |
 | `live` | WebSocket | nối lại 1s → 2s → 4s → 8s, snapshot mỗi lần nối lại |
 
 Bảng xếp hạng và thống kê trên server (`GET /sessions/:id/results`) cũng đã tính cả các sửa tay (view `v_effective_answers`).

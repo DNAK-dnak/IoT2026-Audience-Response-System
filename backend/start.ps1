@@ -1,4 +1,4 @@
-<#
+﻿<#
   start.ps1 - start everything for a test or demo, in one command.
 
   ON THE MAIN LAPTOP (runs the backend), from the backend folder:
@@ -22,6 +22,8 @@
 param(
     [switch]$Pico,                 # real clickers over Bluetooth (ble_bridge.py)
     [switch]$Phone,                # phones over Bluetooth (ble_bridge.py --phone)
+    [string]$PicoIds = "",         # numbers of the real clickers, e.g. "7" or "7,12": fake devices skip them
+    [string]$BrokenKey1 = "",      # clickers whose key 1 is broken, e.g. "9" or "7,12" or "all" (see BLE_BRIDGE.md)
     [string]$Server = "",          # IP of the main laptop -> this laptop only runs bridges
     [int]$Fake = 50,               # number of fake devices (0 = none)
     [string]$Test = "normal",      # fake devices scenario: normal burst lossy wrong_mssv reboot late dropout spam random all
@@ -184,10 +186,12 @@ function Open-Window($title, $command) {
 }
 
 if ($Fake -gt 0 -and -not $remote) {
-    Open-Window "ARS fake devices" "& '$py' scripts\fake_devices.py -n $Fake --mssv-from-class $ClassId --test $Test --room $Room"
+    $avoid = if ($PicoIds) { "--avoid-devs $PicoIds" } else { "" }
+    Open-Window "ARS fake devices" "& '$py' scripts\fake_devices.py -n $Fake --mssv-from-class $ClassId --test $Test --room $Room $avoid"
 }
 if ($Pico) {
-    Open-Window "ARS BLE bridge (Pico)" "& '$py' scripts\ble_bridge.py --room $Room $ports -v"
+    $k1 = if ($BrokenKey1) { "--broken-key1 $BrokenKey1" } else { "" }
+    Open-Window "ARS BLE bridge (Pico)" "& '$py' scripts\ble_bridge.py --room $Room $ports $k1 -v"
 }
 if ($Phone) {
     Open-Window "ARS BLE bridge (phones)" "& '$py' scripts\ble_bridge.py --phone --room $Room $ports -v"
@@ -198,7 +202,8 @@ if ($Watch -and -not $remote) {
 }
 $started | Set-Content -Path $pidFile
 
-if (-not $NoBrowser -and -not $remote) { Start-Process "http://127.0.0.1:8000/ui/" }
+# the root address redirects to the current version of the page (never an old cached copy)
+if (-not $NoBrowser -and -not $remote) { Start-Process "http://127.0.0.1:8000/" }
 
 # ------------------------------------------------------------------ 5. summary
 $ip = if ($remote) { $Server } else { Get-LanIp }
@@ -207,11 +212,14 @@ if ($remote) {
     Write-Host "   Main laptop  : $Server (backend, teacher page)"
     Write-Host "   This laptop  : Bluetooth bridge(s) only"
 } else {
-    Write-Host "   Teacher page : http://127.0.0.1:8000/ui/   (GV001 / 123456)"
+    Write-Host "   Teacher page : http://127.0.0.1:8000/   (GV001 / 123456)"
     Write-Host "   Projector    : button 'Màn hình chiếu' on the teacher page (drag the window to the projector, press F)"
     Write-Host "   API docs     : http://127.0.0.1:8000/docs"
-    if ($h -and $h.analyze) { Ok "AI analysis   : on" } else { Write-Host "   AI analysis  : off (add ANTHROPIC_API_KEY to .env, then .\start.ps1 again)" }
-    if ($Fake -gt 0) { Write-Host "   Fake devices : $Fake (devices 1..$Fake, scenario '$Test', room $Room)" }
+    if ($h -and $h.analyze) { Ok "AI analysis   : on" } else { Write-Host "   AI analysis  : off (add GEMINI_API_KEY or ANTHROPIC_API_KEY to .env, then .\start.ps1 again)" }
+    if ($Fake -gt 0) {
+        $skip = if ($PicoIds) { ", skipping $PicoIds" } else { "" }
+        Write-Host "   Fake devices : $Fake (numbers from 1$skip, scenario '$Test', room $Room)"
+    }
     if ($ip) { Write-Host "   2nd laptop   : .\start.ps1 -Server $ip -Phone    (if this laptop cannot advertise)" }
     if (-not (Get-NetFirewallRule -DisplayName "ARS*" -ErrorAction SilentlyContinue)) {
         Warn "no firewall rule yet: phones / a 2nd laptop cannot reach this one. Once, as administrator: .\start.ps1 -OpenFirewall"
@@ -221,5 +229,7 @@ if ($ip) {
     Write-Host "   Phone (Wi-Fi): http://${ip}:8000/ui/phone.html?dev=51"
     if ($Phone) { Write-Host "   Phone (BLE)  : http://${ip}:8000/ui/phone_ble.html?dev=51   (Chrome flag: see BLE_BRIDGE.md)" }
 }
-if ($Pico)  { Write-Host "   Pico clickers: number them 51-60 (or -Fake 0), stop ble_receiver.py first" }
+if ($Pico -and $Fake -gt 0 -and -not $PicoIds) { Warn "fake devices use numbers 1..${Fake} - add -PicoIds 7 (your clickers' numbers) so they do not share a number" }
+if ($Pico)  { Write-Host "   Pico clickers: stop ble_receiver.py first; register with an MSSV the fake devices do not use" }
+if ($Pico -and $BrokenKey1) { Write-Host "   Key 1 broken : clickers $BrokenKey1 use keys 2-9 as 1-8; answers = key + ENTER (2=A 3=B 4=C 5=D)" }
 Write-Host "   Stop all     : .\stop.ps1"

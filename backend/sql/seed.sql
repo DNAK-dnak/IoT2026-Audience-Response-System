@@ -36,8 +36,8 @@ INSERT INTO devices (device_no, hw, label)
 SELECT n, 'pico2w-ble', 'Clicker ' || lpad(n::text, 2, '0')
 FROM generate_series(1, 60) AS n;
 
--- A demo class with 60 students (22134001 .. 22134060).
+-- A demo class with 60 students (22234001 .. 22234060).
 INSERT INTO classes (code, name) VALUES ('DH22CNTT01', 'Demo class');
 INSERT INTO class_students (class_id, mssv, full_name)
-SELECT 1, '221340' || lpad(n::text, 2, '0'), 'Student ' || n
+SELECT 1, '222340' || lpad(n::text, 2, '0'), 'Student ' || n
 FROM generate_series(1, 60) AS n;
