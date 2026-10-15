@@ -1,4 +1,0 @@
-# Only for scripts/ble_bridge.py, on the laptop with Bluetooth (not in Docker)
-bleak
-paho-mqtt>=2
-httpx
